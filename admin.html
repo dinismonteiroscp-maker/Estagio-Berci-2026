@@ -6,9 +6,15 @@
     <title>Berci - Painel de Administração | Modo Edição</title>
     
     <link rel="shortcut icon" href="image/favicon.ico" type="image/x-icon">
-    
     <link rel="stylesheet" href="assets/css/style.css?v=5">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
         .modal { 
             display: none; 
             position: fixed; 
@@ -22,15 +28,13 @@
             align-items: center; 
             z-index: 9999; 
         }
-        .modal.open { 
-            display: flex; 
-        }
+        .modal.open { display: flex; }
         .modal-content { 
             background: #ffffff; 
             padding: 2rem; 
             border-radius: 12px; 
             width: 90%; 
-            max-width: 600px; 
+            max-width: 800px; 
             max-height: 90vh; 
             overflow-y: auto; 
             position: relative;
@@ -56,134 +60,266 @@
             background: #e2e8f0;
             color: #0f172a;
         }
+        
         .form-group { margin-bottom: 1.2rem; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
         .form-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
         .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
         .btn-primary { background: #2563eb; color: white; }
         .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-secondary:hover { background: #475569; }
         .checkbox-group { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
         .checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+        
+        .main-container { display: flex; flex: 1; width: 100%; height: calc(100vh - 80px); }
+        .sidebar { width: 320px; background: #ffffff; border-right: 1px solid #e2e8f0; padding: 1.5rem; overflow-y: auto; }
+        .conteudo { flex: 1; padding: 2rem; background: #f8fafc; overflow-y: auto; }
+        
+        .produtos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+        .card-produto {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .card-produto:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .card-produto img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+        .card-produto h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .dashed-card {
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            min-height: 320px;
+        }
+        .dashed-card:hover { border-color: #2563eb; color: #2563eb; }
+        .quick-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 0.4rem; }
+        .btn-action {
+            background: white;
+            border: 1px solid #cbd5e1;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-edit:hover { background: #2563eb; color: white; border-color: #2563eb; }
+        .btn-delete:hover { background: #ef4444; color: white; border-color: #ef4444; }
+        
+        .accordion-item { margin-bottom: 0.5rem; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; }
+        .accordion-header {
+            background: none;
+            border: none;
+            font-weight: 700;
+            width: 100%;
+            text-align: left;
+            padding: 6px;
+            cursor: pointer;
+        }
+        .accordion-content { padding-left: 1rem; margin-top: 0.5rem; }
+        .subcat-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px;
+            margin-bottom: 4px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        .subcat-btn {
+            background: none;
+            border: none;
+            flex: 1;
+            text-align: left;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .subcat-btn:hover { color: #2563eb; }
+        .btn-dashed {
+            width: 100%;
+            background: none;
+            border: 1px dashed #cbd5e1;
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-dashed:hover { background: #f1f5f9; }
+        .menu-row-actions { display: flex; gap: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 8px; border: 1px solid #e2e8f0; text-align: left; }
+        th { background: #f1f5f9; }
+        .preco-variante-input { width: 100px; padding: 4px; text-align: right; }
+        .fator-input-box {
+            background: #f8fafc;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .preco-tag { font-size: 1.1rem; font-weight: bold; color: #2563eb; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; }
+        .mensagem-inicial { text-align: center; color: #64748b; padding: 2rem; }
+        
+        .info-box {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #475569;
+        }
     </style>
 </head>
 <body>
 
-    <<header style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; height: 80px;">
-        <div class="logo-area" style="flex: 1; display: flex; align-items: center;">
-            <img src="image/Logo.png" alt="Berci Gráfica" style="height: 50px; width: auto; object-fit: contain;">
-        </div>
-        
-        <div style="flex: 2; text-align: center;">
-            <h1 class="titulo-pagina" style="font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">Modo Edição</h1>
-        </div>
-        
-        <div style="flex: 1; display: flex; justify-content: flex-end;">
-            <a href="index.html" class="btn-modo" style="text-decoration: none; color: #475569; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 6px; background: #f1f5f9; transition: background 0.2s;">Sair do Modo Edição →</a>
-        </div>
-    </header>
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; height: 80px;">
+    <div class="logo-area" style="flex: 1;">
+        <img src="image/Logo.png" alt="Berci Gráfica" style="height: 50px; width: auto;">
+    </div>
+    <div style="flex: 2; text-align: center;">
+        <h1 style="font-size: 2rem; font-weight: 800; color: #0f172a;">Modo Edição</h1>
+    </div>
+    <div style="flex: 1; display: flex; justify-content: flex-end;">
+        <a href="index.html" style="text-decoration: none; color: #475569; padding: 0.6rem 1.2rem; border-radius: 6px; background: #f1f5f9;">Sair do Modo Edição →</a>
+    </div>
+</header>
 
-    <div class="main-container">
-        <aside class="sidebar" id="menu-admin">
-            <button class="btn btn-primary" onclick="abrirModalCategoria()" style="width: 100%; margin-bottom: 1.5rem; display: block;">
-                + Nova Categoria
-            </button>
-        </aside>
+<div class="main-container">
+    <aside class="sidebar" id="menu-admin">
+        <button class="btn btn-primary" onclick="abrirModalCategoria()" style="width: 100%; margin-bottom: 1.5rem;">+ Nova Categoria</button>
+    </aside>
+    <main class="conteudo">
+        <div id="grid-produtos-admin" class="produtos-grid">
+            <p class="mensagem-inicial">Selecione uma subcategoria no menu lateral para visualizar e gerir os produtos.</p>
+        </div>
+    </main>
+</div>
 
-        <main class="conteudo">
-            <div id="grid-produtos-admin" class="produtos-grid">
-                <p class="mensagem-inicial">Selecione uma subcategoria no menu lateral para visualizar e gerir os produtos.</p>
+<!-- Modal Categoria -->
+<div id="modal-categoria" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="fecharModais()">✕</button>
+        <h2 id="modal-cat-titulo">Nova Categoria</h2>
+        <form id="form-categoria" onsubmit="guardarCategoria(event)">
+            <input type="hidden" id="cat-id">
+            <div class="form-group">
+                <label>Nome da Categoria</label>
+                <input type="text" id="cat-nome" class="form-control" required>
             </div>
-        </main>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
     </div>
+</div>
 
-    <div id="modal-categoria" class="modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="fecharModais()">✕</button>
-            <h2 id="modal-cat-titulo" style="margin-bottom: 1.5rem; font-size: 1.3rem;">Nova Categoria</h2>
-            <form id="form-categoria" onsubmit="guardarCategoria(event)">
-                <input type="hidden" id="cat-id">
-                <div class="form-group">
-                    <label>Nome da Categoria</label>
-                    <input type="text" id="cat-nome" class="form-control" required placeholder="Ex: Cartões de Visita">
-                </div>
-                <button type="submit" class="btn btn-primary">Guardar Categoria</button>
-            </form>
-        </div>
+<!-- Modal Subcategoria -->
+<div id="modal-subcategoria" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="fecharModais()">✕</button>
+        <h2 id="modal-subcat-titulo">Nova Subcategoria</h2>
+        <form id="form-subcategoria" onsubmit="guardarSubcategoria(event)">
+            <input type="hidden" id="subcat-id">
+            <input type="hidden" id="subcat-cat-id">
+            <div class="form-group">
+                <label>Nome da Subcategoria</label>
+                <input type="text" id="subcat-nome" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
     </div>
+</div>
 
-    <div id="modal-subcategoria" class="modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="fecharModais()">✕</button>
-            <h2 id="modal-subcat-titulo" style="margin-bottom: 1.5rem; font-size: 1.3rem;">Nova Subcategoria</h2>
-            <form id="form-subcategoria" onsubmit="guardarSubcategoria(event)">
-                <input type="hidden" id="subcat-id">
-                <input type="hidden" id="subcat-cat-id">
+<!-- Modal Produto -->
+<div id="modal-produto" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="fecharModais()">✕</button>
+        <h2 id="modal-prod-titulo">Novo Produto</h2>
+        <form id="form-produto" onsubmit="guardarProduto(event)">
+            <input type="hidden" id="prod-id">
+            <input type="hidden" id="prod-subcat-id">
+            <input type="hidden" id="prod-img-atual">
+            
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="prod-nome" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Imagem</label>
+                <input type="file" id="prod-imagem" class="form-control" accept="image/*">
+            </div>
+            
+            <div class="checkbox-item">
+                <input type="checkbox" id="prod-tipo-preco" onchange="toggleTipoPreco()">
+                <label>Preco variavel / dinâmico</label>
+            </div>
+            
+            <div id="bloco-preco-fixo">
                 <div class="form-group">
-                    <label>Nome da Subcategoria</label>
-                    <input type="text" id="subcat-nome" class="form-control" required placeholder="Ex: Premium">
-                </div>
-                <button type="submit" class="btn btn-primary">Guardar Subcategoria</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="modal-produto" class="modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="fecharModais()">✕</button>
-            <h2 id="modal-prod-titulo" style="margin-bottom: 1.5rem; font-size: 1.3rem;">Novo Produto</h2>
-            <form id="form-produto" onsubmit="guardarProduto(event)">
-                <input type="hidden" id="prod-id">
-                <input type="hidden" id="prod-subcat-id">
-                <input type="hidden" id="prod-img-atual">
-
-                <div class="form-group">
-                    <label>Nome do Produto</label>
-                    <input type="text" id="prod-nome" class="form-control" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Imagem do Produto</label>
-                    <input type="file" id="prod-imagem" class="form-control" accept="image/*">
-                </div>
-
-                <div class="form-group checkbox-item">
-                    <input type="checkbox" id="prod-tipo-preco" onchange="toggleTipoPreco()">
-                    <label for="prod-tipo-preco" style="margin-bottom:0; cursor:pointer;">Este produto tem preço variável / dinâmico</label>
-                </div>
-
-                <div id="bloco-preco-fixo" class="form-group">
-                    <label>Preço Fixo (€)</label>
+                    <label>Preco Fixo (€)</label>
                     <input type="number" id="prod-preco-fixo" class="form-control" step="0.01" value="0.00">
                 </div>
-
-                <div id="bloco-preco-variavel" style="display: none; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 1.2rem;">
-                    <label style="font-weight: 700;">Selecione os Fatores Multiplicadores:</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item"><input type="checkbox" class="chk-fator" value="dimensao" onchange="gerarMatriz()"> Dimensão</div>
-                        <div class="checkbox-item"><input type="checkbox" class="chk-fator" value="quantidade" onchange="gerarMatriz()"> Quantidade</div>
-                        <div class="checkbox-item"><input type="checkbox" class="chk-fator" value="papel" onchange="gerarMatriz()"> Tipo de Papel</div>
-                        <div class="checkbox-item"><input type="checkbox" class="chk-fator" value="acabamento" onchange="gerarMatriz()"> Acabamento</div>
-                        <div class="checkbox-item"><input type="checkbox" class="chk-fator" value="cantos_arredondados" onchange="gerarMatriz()"> Cantos Arredondados</div>
-                        <div class="checkbox-item"><input type="checkbox" id="chk-mala" class="chk-fator" value="mala" onchange="gerarMatriz()"> Tipo de Mala</div>
-                    </div>
-
-                    <div class="checkbox-group" id="item-chk-acessorios-mala" style="display:none; margin-top: 0.5rem; padding-left: 1rem;">
-                        <div class="checkbox-item"><input type="checkbox" id="chk-acessorios-mala" class="chk-fator" value="acessorios_mala" onchange="gerarMatriz()"> Incluir Acessórios da Mala</div>
-                    </div>
-
-                    <div id="inputs-valores-fatores" style="margin-top: 1.2rem; display: flex; flex-direction: column; gap: 0.8rem;"></div>
-                    
-                    <div id="seccao-tabela-matriz" style="margin-top: 1.5rem; display: none;">
-                        <label style="font-weight:700; margin-bottom:0.5rem; display:block;">Matriz Combinatória de Preços</label>
-                        <div id="container-tabela-matriz" style="overflow-x:auto; background:white; border:1px solid #e2e8f0; border-radius:6px;"></div>
-                    </div>
+            </div>
+            
+            <div id="bloco-preco-variavel" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <label style="font-weight: 700;">Fatores para este produto:</label>
+                    <button type="button" class="btn btn-secondary" onclick="abrirModalFatorFromProduto()" style="padding: 4px 12px; font-size: 0.85rem;">+ Criar Fator</button>
                 </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Guardar Produto</button>
-            </form>
-        </div>
+                <div id="fatores-checkboxes" class="checkbox-group"></div>
+                <div id="inputs-valores-fatores"></div>
+                <div id="seccao-tabela-matriz" style="display: none;">
+                    <label style="font-weight:700; margin-top: 1rem; display: block;">Matriz de Precos</label>
+                    <div id="container-tabela-matriz"></div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top: 1rem;">Guardar Produto</button>
+        </form>
     </div>
+</div>
 
-    <script src="assets/js/admin.js"></script>
+<!-- Modal Fator -->
+<div id="modal-fator" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="fecharModais()">✕</button>
+        <h2 id="modal-fator-titulo">Novo Fator</h2>
+        
+        <div id="fator-info" class="info-box"></div>
+        
+        <form id="form-fator" onsubmit="guardarFator(event)">
+            <input type="hidden" id="fator-id">
+            
+            <div class="form-group">
+                <label>Nome do Fator</label>
+                <input type="text" id="fator-nome" class="form-control" required placeholder="Ex: Dimensao, Quantidade, Papel">
+            </div>
+            
+            <div class="form-group">
+                <label>Opcoes (separadas por virgula)</label>
+                <input type="text" id="fator-opcoes" class="form-control" required placeholder="Ex: Pequeno, Medio, Grande">
+            </div>
+            
+            <div class="form-group">
+                <label>Escopo</label>
+                <select id="fator-escopo" class="form-control">
+                    <option value="subcategoria">Subcategoria (apenas para esta subcategoria)</option>
+                    <option value="categoria">Categoria (apenas para esta categoria)</option>
+                    <option value="produto">Produto (apenas para este produto)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Guardar Fator</button>
+        </form>
+    </div>
+</div>
+
+<script src="assets/js/admin.js"></script>
 </body>
 </html>

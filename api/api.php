@@ -1,7 +1,10 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST');
+header('Access-Control-Allow-Headers: Content-Type');
 
-// 1. CONEXÃO À BASE DE DADOS
+// Configuração da Base de Dados
 $host = "localhost";
 $db   = "grafica_db";
 $user = "root";
@@ -22,11 +25,12 @@ try {
     exit;
 }
 
-// 2. ROTAS DA API
+// Rotas da API
 $acao = $_GET['acao'] ?? '';
 
 switch ($acao) {
     
+    // ==================== CATEGORIAS ====================
     case 'listar_estrutura':
         $stmt = $pdo->query("SELECT * FROM categorias ORDER BY nome ASC");
         $categorias = $stmt->fetchAll();
@@ -39,6 +43,51 @@ switch ($acao) {
         echo json_encode($categorias);
         break;
 
+    case 'guardar_categoria':
+        $id = $_POST['id'] ?? '';
+        $nome = $_POST['nome'] ?? '';
+        
+        if (empty($id) || $id === 'null' || $id === 'undefined') {
+            $stmt = $pdo->prepare("INSERT INTO categorias (nome) VALUES (?)");
+            $stmt->execute([$nome]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE categorias SET nome = ? WHERE id = ?");
+            $stmt->execute([$nome, $id]);
+        }
+        echo json_encode(["sucesso" => true]);
+        break;
+
+    case 'eliminar_categoria':
+        $id = $_POST['id'] ?? '';
+        $stmt = $pdo->prepare("DELETE FROM categorias WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["sucesso" => true]);
+        break;
+
+    // ==================== SUBCATEGORIAS ====================
+    case 'guardar_subcategoria':
+        $id = $_POST['id'] ?? '';
+        $categoria_id = $_POST['categoria_id'] ?? '';
+        $nome = $_POST['nome'] ?? '';
+        
+        if (empty($id) || $id === 'null' || $id === 'undefined') {
+            $stmt = $pdo->prepare("INSERT INTO subcategorias (categoria_id, nome) VALUES (?, ?)");
+            $stmt->execute([$categoria_id, $nome]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE subcategorias SET nome = ?, categoria_id = ? WHERE id = ?");
+            $stmt->execute([$nome, $categoria_id, $id]);
+        }
+        echo json_encode(["sucesso" => true]);
+        break;
+
+    case 'eliminar_subcategoria':
+        $id = $_POST['id'] ?? '';
+        $stmt = $pdo->prepare("DELETE FROM subcategorias WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["sucesso" => true]);
+        break;
+
+    // ==================== PRODUTOS ====================
     case 'produtos':
         $subcategoria_id = $_GET['subcategoria_id'] ?? 0;
         $stmt = $pdo->prepare("SELECT * FROM produtos WHERE subcategoria_id = ? ORDER BY nome ASC");
@@ -54,62 +103,14 @@ switch ($acao) {
                 if (!empty($v['atributos_json'])) {
                     $atributos = json_decode($v['atributos_json'], true);
                     if (is_array($atributos)) {
-                        foreach ($atributos as $chave => $valor) {
-                            $v[$chave] = $valor;
-                        }
+                        unset($v['atributos_json']);
+                        $v = array_merge($v, $atributos);
                     }
                 }
             }
             $prod['variantes'] = $variantes;
         }
         echo json_encode($produtos);
-        break;
-
-    case 'guardar_categoria':
-        $id = $_POST['id'] ?? '';
-        $nome = $_POST['nome'] ?? '';
-        
-        if (empty($id) || $id === 'null' || $id === 'undefined') {
-            // Nova Categoria
-            $stmt = $pdo->prepare("INSERT INTO categorias (nome) VALUES (?)");
-            $stmt->execute([$nome]);
-        } else {
-            // Editar Categoria Existente
-            $stmt = $pdo->prepare("UPDATE categorias SET nome = ? WHERE id = ?");
-            $stmt->execute([$nome, $id]);
-        }
-        echo json_encode(["sucesso" => true]);
-        break;
-
-    case 'eliminar_categoria':
-        $id = $_POST['id'] ?? '';
-        $stmt = $pdo->prepare("DELETE FROM categorias WHERE id = ?");
-        $stmt->execute([$id]);
-        echo json_encode(["sucesso" => true]);
-        break;
-
-    case 'guardar_subcategoria':
-        $id = $_POST['id'] ?? '';
-        $categoria_id = $_POST['categoria_id'] ?? '';
-        $nome = $_POST['nome'] ?? '';
-        
-        if (empty($id) || $id === 'null' || $id === 'undefined') {
-            // Nova Subcategoria
-            $stmt = $pdo->prepare("INSERT INTO subcategorias (categoria_id, nome) VALUES (?, ?)");
-            $stmt->execute([$categoria_id, $nome]);
-        } else {
-            // Editar Subcategoria Existente
-            $stmt = $pdo->prepare("UPDATE subcategorias SET nome = ?, categoria_id = ? WHERE id = ?");
-            $stmt->execute([$nome, $categoria_id, $id]);
-        }
-        echo json_encode(["sucesso" => true]);
-        break;
-
-    case 'eliminar_subcategoria':
-        $id = $_POST['id'] ?? '';
-        $stmt = $pdo->prepare("DELETE FROM subcategorias WHERE id = ?");
-        $stmt->execute([$id]);
-        echo json_encode(["sucesso" => true]);
         break;
 
     case 'guardar_produto':
@@ -120,21 +121,22 @@ switch ($acao) {
         $preco_fixo = !empty($_POST['preco_fixo']) ? $_POST['preco_fixo'] : null;
         $imagem_url = $_POST['imagem_url_atual'] ?? '';
 
-        // Tratamento do Upload da Imagem
+        // Upload da imagem
         if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] === UPLOAD_ERR_OK) {
             $ext = pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION);
             $nomeFicheiro = uniqid('prod_', true) . '.' . $ext;
             
-            if (!is_dir('../uploads')) {
-                mkdir('../uploads', 0777, true);
+            $uploadDir = __DIR__ . '/../uploads/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
             }
             
-            if (move_uploaded_file($_FILES['imagem']['tmp_name'], '../uploads/' . $nomeFicheiro)) {
+            if (move_uploaded_file($_FILES['imagem']['tmp_name'], $uploadDir . $nomeFicheiro)) {
                 $imagem_url = 'uploads/' . $nomeFicheiro;
             }
         }
 
-        // Salvar dados do Produto Principal
+        // Salvar produto
         if (empty($id) || $id === 'null' || $id === 'undefined') {
             $stmt = $pdo->prepare("INSERT INTO produtos (subcategoria_id, nome, imagem_url, tipo_preco, preco_fixo) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$subcategoria_id, $nome, $imagem_url, $tipo_preco, $preco_fixo]);
@@ -144,26 +146,23 @@ switch ($acao) {
             $stmt->execute([$subcategoria_id, $nome, $imagem_url, $tipo_preco, $preco_fixo, $id]);
         }
 
-        // CORRIGIDO: Elimina as variantes antigas de forma segura usando o $id correto
+        // Remover variantes antigas
         $stmtDel = $pdo->prepare("DELETE FROM produto_variantes WHERE produto_id = ?");
         $stmtDel->execute([$id]);
 
-        // Se o preço for variável, grava a nova matriz combinatória
+        // Salvar novas variantes
         if ($tipo_preco === 'variavel' && !empty($_POST['variantes'])) {
             $variantes = json_decode($_POST['variantes'], true);
             
             if (is_array($variantes)) {
-                foreach ($variantes as $v) {
-                    $precoVar = $v['preco'] ?? 0;
-                    
-                    // CORRIGIDO: Variável unificada sem espaços
-                    $atributos_originais = $v; 
-                    unset($atributos_originais['preco']);
-                    
-                    $atributos_json = json_encode($atributos_originais, JSON_UNESCAPED_UNICODE);
-
-                    $stmtInsVar = $pdo->prepare("INSERT INTO produto_variantes (produto_id, preco, atributos_json) VALUES (?, ?, ?)");
-                    $stmtInsVar->execute([$id, $precoVar, $atributos_json]);
+                foreach ($variantes as $variante) {
+                    if (isset($variante['preco']) && isset($variante['atributos'])) {
+                        $precoVar = floatval($variante['preco']);
+                        $atributos_json = json_encode($variante['atributos'], JSON_UNESCAPED_UNICODE);
+                        
+                        $stmtInsVar = $pdo->prepare("INSERT INTO produto_variantes (produto_id, preco, atributos_json) VALUES (?, ?, ?)");
+                        $stmtInsVar->execute([$id, $precoVar, $atributos_json]);
+                    }
                 }
             }
         }
@@ -178,7 +177,211 @@ switch ($acao) {
         echo json_encode(["sucesso" => true]);
         break;
 
+    // ==================== FATORES DINÂMICOS ====================
+    case 'listar_fatores':
+        $subcategoria_id = isset($_GET['subcategoria_id']) ? intval($_GET['subcategoria_id']) : 0;
+        $produto_id = isset($_GET['produto_id']) ? intval($_GET['produto_id']) : 0;
+        
+        $fatores = [];
+        $fatoresIds = [];
+        
+        // Buscar fatores globais
+        $stmt = $pdo->query("SELECT * FROM fatores WHERE escopo = 'global' AND ativo = 1 ORDER BY ordem ASC");
+        $globais = $stmt->fetchAll();
+        foreach ($globais as $f) {
+            $f['opcoes'] = json_decode($f['opcoes'], true);
+            if (!in_array($f['id'], $fatoresIds)) {
+                $fatores[] = $f;
+                $fatoresIds[] = $f['id'];
+            }
+        }
+        
+        // Buscar fatores da categoria
+        if ($subcategoria_id > 0) {
+            $stmt = $pdo->prepare("
+                SELECT f.* FROM fatores f
+                JOIN subcategorias s ON s.categoria_id = f.entidade_id
+                WHERE f.escopo = 'categoria' AND s.id = ? AND f.ativo = 1
+                ORDER BY f.ordem ASC
+            ");
+            $stmt->execute([$subcategoria_id]);
+            $categoriaFatores = $stmt->fetchAll();
+            foreach ($categoriaFatores as $f) {
+                $f['opcoes'] = json_decode($f['opcoes'], true);
+                if (!in_array($f['id'], $fatoresIds)) {
+                    $fatores[] = $f;
+                    $fatoresIds[] = $f['id'];
+                }
+            }
+        }
+        
+        // Buscar fatores da subcategoria
+        if ($subcategoria_id > 0) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM fatores 
+                WHERE escopo = 'subcategoria' AND entidade_id = ? AND ativo = 1
+                ORDER BY ordem ASC
+            ");
+            $stmt->execute([$subcategoria_id]);
+            $subFatores = $stmt->fetchAll();
+            foreach ($subFatores as $f) {
+                $f['opcoes'] = json_decode($f['opcoes'], true);
+                if (!in_array($f['id'], $fatoresIds)) {
+                    $fatores[] = $f;
+                    $fatoresIds[] = $f['id'];
+                }
+            }
+        }
+        
+        // Buscar fatores do produto (se já existir)
+        if ($produto_id > 0) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM fatores 
+                WHERE escopo = 'produto' AND entidade_id = ? AND ativo = 1
+                ORDER BY ordem ASC
+            ");
+            $stmt->execute([$produto_id]);
+            $prodFatores = $stmt->fetchAll();
+            foreach ($prodFatores as $f) {
+                $f['opcoes'] = json_decode($f['opcoes'], true);
+                if (!in_array($f['id'], $fatoresIds)) {
+                    $fatores[] = $f;
+                    $fatoresIds[] = $f['id'];
+                }
+            }
+        }
+        
+        // Buscar fatores pendentes (produto_pendente)
+        $stmt = $pdo->prepare("
+            SELECT * FROM fatores 
+            WHERE escopo = 'produto_pendente' AND ativo = 1
+            ORDER BY id ASC
+        ");
+        $stmt->execute();
+        $pendentes = $stmt->fetchAll();
+        foreach ($pendentes as $p) {
+            $p['opcoes'] = json_decode($p['opcoes'], true);
+            if (!in_array($p['id'], $fatoresIds)) {
+                $fatores[] = $p;
+                $fatoresIds[] = $p['id'];
+            }
+        }
+        
+        echo json_encode($fatores);
+        break;
+
+    case 'listar_todos_fatores':
+        $stmt = $pdo->query("
+            SELECT f.*, 
+                   CASE 
+                       WHEN f.escopo = 'categoria' THEN c.nome
+                       WHEN f.escopo = 'subcategoria' THEN s.nome
+                       WHEN f.escopo = 'produto' THEN p.nome
+                       WHEN f.escopo = 'produto_pendente' THEN 'Aguardando produto'
+                       ELSE NULL
+                   END as entidade_nome
+            FROM fatores f
+            LEFT JOIN categorias c ON f.escopo = 'categoria' AND f.entidade_id = c.id
+            LEFT JOIN subcategorias s ON f.escopo = 'subcategoria' AND f.entidade_id = s.id
+            LEFT JOIN produtos p ON f.escopo = 'produto' AND f.entidade_id = p.id
+            ORDER BY FIELD(f.escopo, 'global', 'categoria', 'subcategoria', 'produto', 'produto_pendente'), f.ordem
+        ");
+        $fatores = $stmt->fetchAll();
+        foreach ($fatores as &$f) {
+            $f['opcoes'] = json_decode($f['opcoes'], true);
+        }
+        echo json_encode($fatores);
+        break;
+
+    case 'guardar_fator':
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        $id = $data['id'] ?? null;
+        $nome = $data['nome'] ?? '';
+        $tipo = $data['tipo'] ?? 'select';
+        $escopo = $data['escopo'] ?? 'global';
+        $entidade_id = !empty($data['entidade_id']) ? $data['entidade_id'] : null;
+        $opcoes = json_encode($data['opcoes'] ?? []);
+        $obrigatorio = isset($data['obrigatorio']) ? ($data['obrigatorio'] ? 1 : 0) : 0;
+        $ordem = $data['ordem'] ?? 0;
+        
+        if ($id && $id !== 'null') {
+            $stmt = $pdo->prepare("
+                UPDATE fatores SET 
+                    nome = ?, tipo = ?, escopo = ?, 
+                    entidade_id = ?, opcoes = ?, 
+                    obrigatorio = ?, ordem = ?
+                WHERE id = ?
+            ");
+            $stmt->execute([$nome, $tipo, $escopo, $entidade_id, $opcoes, $obrigatorio, $ordem, $id]);
+        } else {
+            $stmt = $pdo->prepare("
+                INSERT INTO fatores (nome, tipo, escopo, entidade_id, opcoes, obrigatorio, ordem) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$nome, $tipo, $escopo, $entidade_id, $opcoes, $obrigatorio, $ordem]);
+            $id = $pdo->lastInsertId();
+        }
+        
+        echo json_encode(["sucesso" => true, "id" => $id]);
+        break;
+
+    case 'eliminar_fator':
+        $id = $_POST['id'] ?? 0;
+        $stmt = $pdo->prepare("DELETE FROM fatores WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["sucesso" => true]);
+        break;
+
+    case 'converter_fatores_pendentes':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $produto_id = $data['produto_id'] ?? 0;
+        $produto_nome = $data['produto_nome'] ?? '';
+        
+        if ($produto_id > 0) {
+            $stmt = $pdo->prepare("
+                UPDATE fatores 
+                SET escopo = 'produto', entidade_id = ? 
+                WHERE escopo = 'produto_pendente' AND entidade_id IS NULL
+            ");
+            $stmt->execute([$produto_id]);
+            
+            $count = $stmt->rowCount();
+            echo json_encode(["sucesso" => true, "convertidos" => $count]);
+        } else {
+            echo json_encode(["erro" => "ID do produto inválido"]);
+        }
+        break;
+
+    // ==================== ROTAS AUXILIARES ====================
+    case 'listar_categorias_simples':
+        $stmt = $pdo->query("SELECT id, nome FROM categorias ORDER BY nome");
+        echo json_encode($stmt->fetchAll());
+        break;
+
+    case 'listar_subcategorias_simples':
+        $stmt = $pdo->query("
+            SELECT s.id, s.nome, c.nome as categoria_nome 
+            FROM subcategorias s
+            JOIN categorias c ON s.categoria_id = c.id
+            ORDER BY c.nome, s.nome
+        ");
+        echo json_encode($stmt->fetchAll());
+        break;
+
+    case 'listar_produtos_simples':
+        $stmt = $pdo->query("
+            SELECT p.id, p.nome, s.nome as subcategoria_nome, c.nome as categoria_nome
+            FROM produtos p
+            JOIN subcategorias s ON p.subcategoria_id = s.id
+            JOIN categorias c ON s.categoria_id = c.id
+            ORDER BY c.nome, s.nome, p.nome
+        ");
+        echo json_encode($stmt->fetchAll());
+        break;
+
     default:
         echo json_encode(["erro" => "Ação não encontrada"]);
         break;
 }
+?>
