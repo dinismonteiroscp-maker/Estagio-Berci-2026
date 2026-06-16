@@ -30,41 +30,135 @@ async function carregarEstruturaCliente() {
                 cat.subcategorias.forEach(sub => {
                     subsHtml += `
                         <div class="subcat-container">
-                            <button class="subcat-btn" onclick="carregarProdutosCliente(${sub.id}, event)">${escapeHtml(sub.nome)}</button>
+                            <button class="subcat-btn" data-subcat-id="${sub.id}">${escapeHtml(sub.nome)}</button>
                         </div>
                     `;
                 });
             }
 
             divItem.innerHTML = `
-                <button class="accordion-header" onclick="toggleAccordionCliente(this)">
-                    ${escapeHtml(cat.nome)}
-                </button>
-                <div class="accordion-content" style="display:none; padding-left:1rem;">
+                <button class="accordion-header" data-cat-id="${cat.id}" data-cat-nome="${escapeHtml(cat.nome)}">${escapeHtml(cat.nome)}</button>
+                <div class="accordion-content">
                     ${subsHtml}
                 </div>
             `;
 
             menu.appendChild(divItem);
         });
+
+        // Adicionar event listeners
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function(e) {
+                const content = this.nextElementSibling;
+                const categoriaId = parseInt(this.dataset.catId);
+                const categoriaNome = this.dataset.catNome;
+                
+                // Alternar a classe closed
+                if (content.classList.contains('closed')) {
+                    content.classList.remove('closed');
+                    this.classList.add('open');
+                    // Carregar produtos da categoria
+                    carregarProdutosCategoria(categoriaId, categoriaNome);
+                } else {
+                    content.classList.add('closed');
+                    this.classList.remove('open');
+                    // Mostrar mensagem inicial
+                    const grid = document.getElementById("grelha-produtos");
+                    if (grid) {
+                        grid.innerHTML = "<p class='mensagem-inicial'>Selecione uma categoria ou subcategoria para visualizar os produtos.</p>";
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.subcat-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const subcatId = parseInt(this.dataset.subcatId);
+                carregarProdutosCliente(subcatId);
+            });
+        });
+
+        // Abrir a primeira categoria por padrão
+        const primeiroHeader = document.querySelector('.accordion-header');
+        if (primeiroHeader) {
+            const content = primeiroHeader.nextElementSibling;
+            content.classList.remove('closed');
+            primeiroHeader.classList.add('open');
+            const categoriaId = parseInt(primeiroHeader.dataset.catId);
+            const categoriaNome = primeiroHeader.dataset.catNome;
+            carregarProdutosCategoria(categoriaId, categoriaNome);
+        }
+
     } catch (error) {
         console.error("Erro ao carregar menu:", error);
     }
 }
 
-function toggleAccordionCliente(btn) {
-    const content = btn.nextElementSibling;
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-    } else {
-        content.style.display = 'none';
+async function carregarProdutosCategoria(categoriaId, categoriaNome) {
+    const grid = document.getElementById("grelha-produtos");
+    if (!grid) return;
+    
+    grid.innerHTML = `
+        <div class="loading-produtos">
+            <div class="spinner"></div>
+            <p>A carregar produtos da categoria "${escapeHtml(categoriaNome)}"...</p>
+        </div>
+    `;
+    
+    try {
+        // Buscar todas as categorias
+        const res = await fetch('api/api.php?acao=listar_estrutura');
+        const estrutura = await res.json();
+        
+        // Encontrar a categoria clicada
+        const categoria = estrutura.find(c => c.id == categoriaId);
+        if (!categoria) {
+            grid.innerHTML = "<p class='mensagem-inicial'>Categoria não encontrada.</p>";
+            return;
+        }
+        
+        // Verificar se tem subcategorias
+        if (!categoria.subcategorias || categoria.subcategorias.length === 0) {
+            grid.innerHTML = "<p class='mensagem-inicial'>Esta categoria não tem subcategorias.</p>";
+            return;
+        }
+        
+        // Buscar produtos de todas as subcategorias
+        const promessas = categoria.subcategorias.map(sub => 
+            fetch(`api/api.php?acao=produtos&subcategoria_id=${sub.id}`)
+                .then(res => res.ok ? res.json() : [])
+                .catch(() => [])
+        );
+        
+        const resultados = await Promise.all(promessas);
+        const todosProdutos = resultados.flat();
+        
+        if (todosProdutos.length === 0) {
+            grid.innerHTML = "<p class='mensagem-inicial'>Esta categoria não tem produtos disponíveis.</p>";
+            return;
+        }
+        
+        renderizarProdutosNaGrelha(todosProdutos);
+        
+    } catch (error) {
+        console.error("Erro ao carregar produtos da categoria:", error);
+        grid.innerHTML = "<p class='mensagem-inicial'>Erro ao carregar produtos. Tente novamente.</p>";
     }
 }
 
-async function carregarProdutosCliente(subcatId, event) {
-    if (event) event.stopPropagation();
-    
+async function carregarProdutosCliente(subcatId) {
     try {
+        const grid = document.getElementById("grelha-produtos");
+        if (grid) {
+            grid.innerHTML = `
+                <div class="loading-produtos">
+                    <div class="spinner"></div>
+                    <p>A carregar produtos...</p>
+                </div>
+            `;
+        }
+        
         const res = await fetch(`api/api.php?acao=produtos&subcategoria_id=${subcatId}`);
         const produtos = await res.json();
         renderizarProdutosNaGrelha(produtos);
@@ -81,7 +175,7 @@ function renderizarProdutosNaGrelha(produtos) {
     grid.innerHTML = "";
 
     if (!produtos || produtos.length === 0) {
-        grid.innerHTML = "<p class='mensagem-inicial'>Nenhum produto disponível.</p>";
+        grid.innerHTML = "<p class='mensagem-inicial'>Nenhum produto disponível nesta categoria.</p>";
         return;
     }
 
@@ -100,7 +194,6 @@ function renderizarProdutosNaGrelha(produtos) {
             prod.variantes.forEach(v => {
                 let atributos = v.atributos_json ? JSON.parse(v.atributos_json) : v;
                 Object.keys(atributos).forEach(chave => {
-                    // Ignorar campos que não são fatores
                     if (chave !== 'id' && chave !== 'produto_id' && chave !== 'preco' && chave !== 'atributos_json' && chave !== 'created_at' && atributos[chave]) {
                         if (!atributosMapeados[chave]) atributosMapeados[chave] = [];
                         if (!atributosMapeados[chave].includes(atributos[chave])) {

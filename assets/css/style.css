@@ -130,7 +130,7 @@ header {
     padding: 0 2rem;
     background: #ffffff;
     border-bottom: 1px solid var(--slate-200);
-    height: 70px;
+    height: 80px;
     width: 100%;
     position: sticky;
     top: 0;
@@ -294,14 +294,16 @@ header .titulo-pagina {
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-/* ===== LAYOUT PRINCIPAL ===== */
+/* ===== LAYOUT PRINCIPAL - SCROLL INDEPENDENTE ===== */
 .main-container {
     display: flex;
     flex: 1;
     width: 100%;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 80px);
+    overflow: hidden;
 }
 
+/* Coluna Esquerda: Sidebar */
 .sidebar,
 #menu-admin,
 #menu-categorias {
@@ -313,19 +315,49 @@ header .titulo-pagina {
     padding: 1.5rem 1rem;
     height: 100%;
     overflow-y: auto;
-    transition: var(--transition);
+    overflow-x: hidden;
 }
 
+/* Coluna Direita: Área de Conteúdo */
 .conteudo {
     flex: 1;
     padding: 2rem;
     background: var(--slate-50);
     overflow-y: auto;
     height: 100%;
-    animation: fadeIn 0.4s ease-out;
 }
 
-/* ===== ACORDEÃO ===== */
+/* Estilizar scrollbars */
+.sidebar::-webkit-scrollbar,
+#menu-admin::-webkit-scrollbar,
+#menu-categorias::-webkit-scrollbar,
+.conteudo::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+#menu-admin::-webkit-scrollbar-track,
+#menu-categorias::-webkit-scrollbar-track,
+.conteudo::-webkit-scrollbar-track {
+    background: var(--slate-100);
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+#menu-admin::-webkit-scrollbar-thumb,
+#menu-categorias::-webkit-scrollbar-thumb,
+.conteudo::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+#menu-admin::-webkit-scrollbar-thumb:hover,
+#menu-categorias::-webkit-scrollbar-thumb:hover,
+.conteudo::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
+}
+
+/* ===== ELEMENTOS DO MENU LATERAL (ACÓRDÃO) ===== */
 .accordion-item {
     margin-bottom: 0.75rem;
     background: var(--slate-50);
@@ -383,7 +415,7 @@ header .titulo-pagina {
     display: block;
 }
 
-/* ===== SUBCATEGORIAS ===== */
+/* Linhas das Subcategorias */
 .subcat-container {
     display: flex;
     justify-content: space-between;
@@ -424,7 +456,7 @@ header .titulo-pagina {
     align-items: center;
 }
 
-/* ===== PRODUTOS GRID ===== */
+/* ===== GRELHA DE PRODUTOS ===== */
 .produtos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -440,7 +472,7 @@ header .titulo-pagina {
     padding: 3rem 0;
 }
 
-/* ===== CARD PRODUTO ===== */
+/* ===== CARTÃO DE PRODUTO ===== */
 .card-produto {
     background: #ffffff;
     border: 1px solid var(--slate-200);
@@ -497,7 +529,17 @@ header .titulo-pagina {
     border: 1px solid var(--slate-200);
 }
 
-/* ===== CARD DASHED ===== */
+.preco-tag {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-top: auto;
+    border-top: 1px solid var(--slate-100);
+    padding-top: 0.75rem;
+    transition: var(--transition);
+}
+
+/* Cartão Especial de Ação (Dashed) */
 .dashed-card {
     border: 2px dashed var(--slate-300);
     background: none;
@@ -523,17 +565,6 @@ header .titulo-pagina {
 
 .dashed-card:hover div {
     transform: scale(1.05);
-}
-
-/* ===== PREÇO ===== */
-.preco-tag {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: var(--primary);
-    margin-top: auto;
-    border-top: 1px solid var(--slate-100);
-    padding-top: 0.75rem;
-    transition: var(--transition);
 }
 
 /* ===== MODAIS ===== */
@@ -784,26 +815,14 @@ tr:hover td {
     margin-top: 10px;
 }
 
-.tree-item-categoria .checkbox-label {
-    font-size: 1rem;
-}
-
 .tree-item-subcategoria {
     margin-left: 20px;
     margin-top: 5px;
 }
 
-.tree-item-subcategoria .checkbox-label {
-    font-size: 0.95rem;
-}
-
 .tree-item-produto {
     margin-left: 40px;
     margin-top: 3px;
-}
-
-.tree-item-produto .checkbox-label {
-    font-size: 0.9rem;
 }
 
 .checkbox-label {
@@ -839,7 +858,7 @@ tr:hover td {
     padding: 20px;
 }
 
-/* ===== SCROLLBAR ===== */
+/* ===== SCROLLBAR GLOBAL ===== */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -875,16 +894,39 @@ tr:hover td {
         font-size: 1.2rem;
     }
 
+    .header-actions {
+        flex: 0 0 auto;
+        gap: 0.5rem;
+    }
+
+    .header-actions .btn {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    .main-container {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+
     .sidebar,
     #menu-admin,
     #menu-categorias {
-        width: 240px;
-        min-width: 240px;
-        max-width: 240px;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        height: auto;
+        max-height: 300px;
+        border-right: none;
+        border-bottom: 1px solid var(--slate-200);
         padding: 1rem;
+        overflow-y: auto;
     }
 
     .conteudo {
+        height: auto;
+        overflow-y: visible;
         padding: 1rem;
     }
 
@@ -898,16 +940,6 @@ tr:hover td {
         max-width: 95%;
     }
 
-    .header-actions {
-        flex: 0 0 auto;
-        gap: 0.5rem;
-    }
-
-    .header-actions .btn {
-        font-size: 0.75rem;
-        padding: 4px 10px;
-    }
-
     .tree-item-produto {
         margin-left: 20px;
     }
@@ -917,9 +949,7 @@ tr:hover td {
     .sidebar,
     #menu-admin,
     #menu-categorias {
-        width: 200px;
-        min-width: 200px;
-        max-width: 200px;
+        max-height: 200px;
         padding: 0.75rem;
     }
 

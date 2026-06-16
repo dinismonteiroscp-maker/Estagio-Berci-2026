@@ -367,14 +367,23 @@ async function guardarProduto(e) {
             return;
         }
         fd.append('variantes', JSON.stringify(variantes));
+        console.log('Variantes a guardar:', variantes);
     }
 
-    const res = await fetch('api/api.php?acao=guardar_produto', { method: 'POST', body: fd });
-    const result = await res.json();
-    
-    if (result.sucesso) {
-        fecharModais();
-        if (subcatAtiva) carregarProdutosAdmin(subcatAtiva);
+    try {
+        const res = await fetch('api/api.php?acao=guardar_produto', { method: 'POST', body: fd });
+        const result = await res.json();
+        console.log('Resposta do servidor:', result);
+        
+        if (result.sucesso) {
+            fecharModais();
+            if (subcatAtiva) carregarProdutosAdmin(subcatAtiva);
+        } else {
+            alert('Erro: ' + (result.erro || 'Tente novamente'));
+        }
+    } catch (error) {
+        console.error('Erro ao guardar produto:', error);
+        alert('Erro ao guardar produto. Tente novamente.');
     }
 }
 
@@ -390,6 +399,10 @@ async function eliminarProduto(id) {
 function abrirModalEditarProduto(prodStringEncoded) {
     try {
         const prod = JSON.parse(decodeURIComponent(prodStringEncoded));
+        console.log('=== PRODUTO A EDITAR ===');
+        console.log('Produto:', prod);
+        console.log('Variantes:', prod.variantes);
+        
         abrirModalProduto(prod.subcategoria_id, prod.id);
         document.getElementById('prod-id').value = prod.id;
         document.getElementById('prod-nome').value = prod.nome;
@@ -408,24 +421,75 @@ function abrirModalEditarProduto(prodStringEncoded) {
             
             setTimeout(async () => {
                 if (prod.variantes && prod.variantes.length > 0) {
+                    console.log('=== A PROCESSAR VARIANTES ===');
+                    
                     let fatoresUsados = new Set();
-                    prod.variantes.forEach(v => {
-                        let atributos = v.atributos_json ? JSON.parse(v.atributos_json) : v;
+                    let fatoresValores = {};
+                    
+                    prod.variantes.forEach((v, index) => {
+                        console.log('Variante ' + index + ':', v);
+                        
+                        let atributos = {};
+                        if (v.atributos_json) {
+                            try {
+                                atributos = JSON.parse(v.atributos_json);
+                                console.log('Atributos do JSON:', atributos);
+                            } catch(e) {
+                                console.error('Erro ao parsear JSON:', e);
+                            }
+                        } else {
+                            atributos = {...v};
+                            delete atributos.id;
+                            delete atributos.produto_id;
+                            delete atributos.preco;
+                            delete atributos.created_at;
+                            console.log('Atributos diretos:', atributos);
+                        }
+                        
                         Object.keys(atributos).forEach(key => {
-                            if (key !== 'preco' && key !== 'id' && key !== 'produto_id') {
+                            if (key !== 'preco' && key !== 'id' && key !== 'produto_id' && key !== 'atributos_json' && key !== 'created_at') {
                                 fatoresUsados.add(key);
+                                if (!fatoresValores[key]) fatoresValores[key] = [];
+                                if (!fatoresValores[key].includes(atributos[key])) {
+                                    fatoresValores[key].push(atributos[key]);
+                                }
                             }
                         });
                     });
                     
+                    console.log('=== FATORES USADOS ===');
+                    console.log('Fatores Set:', fatoresUsados);
+                    console.log('Fatores Array:', Array.from(fatoresUsados));
+                    console.log('Valores:', fatoresValores);
+                    
                     await new Promise(r => setTimeout(r, 500));
                     
-                    document.querySelectorAll('.chk-fator').forEach(chk => {
+                    const checkboxes = document.querySelectorAll('.chk-fator');
+                    console.log('Checkboxes disponíveis:', checkboxes.length);
+                    checkboxes.forEach(chk => {
+                        console.log('Checkbox:', chk.dataset.nome);
+                    });
+                    
+                    let marcados = 0;
+                    checkboxes.forEach(chk => {
                         const nome = chk.dataset.nome;
-                        if (fatoresUsados.has(nome)) {
+                        const nomeNormalizado = nome.trim().toLowerCase();
+                        let found = false;
+                        fatoresUsados.forEach(fator => {
+                            if (fator.trim().toLowerCase() === nomeNormalizado) {
+                                found = true;
+                            }
+                        });
+                        
+                        if (found) {
                             chk.checked = true;
+                            marcados++;
+                            console.log('✅ Checkbox marcado:', nome);
+                        } else {
+                            console.log('❌ Checkbox NÃO marcado:', nome);
                         }
                     });
+                    console.log('Total marcados:', marcados);
                     
                     gerarMatriz();
                     
@@ -433,40 +497,67 @@ function abrirModalEditarProduto(prodStringEncoded) {
                         const inputs = document.querySelectorAll('.input-valores-fator');
                         inputs.forEach(input => {
                             const nome = input.dataset.fatorNome;
-                            const valoresUnicos = [...new Set(prod.variantes.map(v => {
-                                let atributos = v.atributos_json ? JSON.parse(v.atributos_json) : v;
-                                return atributos[nome];
-                            }))];
-                            if (valoresUnicos.length > 0 && valoresUnicos[0]) {
-                                input.value = valoresUnicos.join(', ');
+                            const nomeNormalizado = nome.trim().toLowerCase();
+                            let found = false;
+                            Object.keys(fatoresValores).forEach(key => {
+                                if (key.trim().toLowerCase() === nomeNormalizado) {
+                                    found = true;
+                                    input.value = fatoresValores[key].join(', ');
+                                    console.log('✅ Valor preenchido para', nome, ':', fatoresValores[key].join(', '));
+                                }
+                            });
+                            if (!found) {
+                                console.log('❌ Nenhum valor para:', nome);
                             }
                         });
+                        
                         renderizarTabelaCombinatoria();
                         
                         setTimeout(() => {
                             document.querySelectorAll('.linha-matriz').forEach(tr => {
                                 let comboValores = JSON.parse(tr.dataset.combo);
                                 let varianteMatch = prod.variantes.find(v => {
-                                    let atributos = v.atributos_json ? JSON.parse(v.atributos_json) : v;
+                                    let atributos = {};
+                                    if (v.atributos_json) {
+                                        try {
+                                            atributos = JSON.parse(v.atributos_json);
+                                        } catch(e) {}
+                                    } else {
+                                        atributos = {...v};
+                                        delete atributos.id;
+                                        delete atributos.produto_id;
+                                        delete atributos.preco;
+                                        delete atributos.created_at;
+                                    }
+                                    
                                     let match = true;
                                     comboValores.forEach((valor, idx) => {
                                         const nomeFator = document.querySelectorAll('.input-valores-fator')[idx]?.dataset.fatorNome;
-                                        if (atributos[nomeFator] !== valor) match = false;
+                                        if (atributos[nomeFator] !== valor) {
+                                            match = false;
+                                        }
                                     });
                                     return match;
                                 });
+                                
                                 if (varianteMatch) {
                                     const precoInput = tr.querySelector('.preco-variante-input');
-                                    if (precoInput) precoInput.value = varianteMatch.preco;
+                                    if (precoInput) {
+                                        precoInput.value = varianteMatch.preco;
+                                        console.log('Preço preenchido:', varianteMatch.preco);
+                                    }
                                 }
                             });
                         }, 100);
                     }, 100);
+                } else {
+                    console.log('Produto sem variantes');
                 }
-            }, 500);
+            }, 1000);
         }
     } catch(e) {
         console.error("Erro ao editar produto:", e);
+        alert('Erro ao carregar o produto para edição.');
     }
 }
 
@@ -755,16 +846,8 @@ async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
     
     try {
         const res = await fetch(url);
-        const text = await res.text();
-        let fatores;
-        
-        try {
-            fatores = JSON.parse(text);
-        } catch (e) {
-            console.error('Resposta não é JSON válido:', text);
-            container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores. Verifique a ligação ao servidor.</div>';
-            return;
-        }
+        const fatores = await res.json();
+        console.log('Fatores carregados:', fatores);
         
         container.innerHTML = '';
         

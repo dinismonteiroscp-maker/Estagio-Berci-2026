@@ -51,14 +51,66 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .fade-in {
     animation: fadeIn 0.4s ease-out forwards;
 }
+
+/* ===== LOADING OVERLAY ===== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--slate-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--slate-500);
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.loading-text span {
+    animation: pulse 1.4s ease-in-out infinite;
+    display: inline-block;
+}
+
+.loading-text span:nth-child(2) { animation-delay: 0.2s; }
+.loading-text span:nth-child(3) { animation-delay: 0.4s; }
 
 /* ===== HEADER ===== */
 header {
@@ -92,12 +144,23 @@ header .logo-area img:hover {
     transform: scale(1.05);
 }
 
+header .header-center {
+    flex: 2;
+    text-align: center;
+}
+
 header .titulo-pagina {
     font-size: 2rem;
     font-weight: 800;
     color: var(--slate-900);
     margin: 0;
     letter-spacing: -0.5px;
+}
+
+header .header-right {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
 }
 
 header .btn-modo {
@@ -123,6 +186,8 @@ header .btn-modo:hover {
     display: flex;
     flex: 1;
     width: 100%;
+    height: calc(100vh - 80px);
+    overflow: hidden;
 }
 
 /* ===== SIDEBAR ===== */
@@ -132,17 +197,32 @@ header .btn-modo:hover {
     background: #ffffff;
     border-right: 1px solid var(--slate-200);
     padding: 1.5rem;
-    height: calc(100vh - 80px);
-    position: sticky;
-    top: 80px;
+    height: 100%;
     overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: var(--slate-100);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
 }
 
 /* ===== ACORDEÃO ===== */
 .accordion-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     border-bottom: 1px solid var(--slate-100);
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.75rem;
 }
 
 .accordion-header {
@@ -177,15 +257,16 @@ header .btn-modo:hover {
     transform: rotate(180deg);
 }
 
+/* O conteúdo do acordeão - sempre visível por padrão */
 .accordion-content {
-    display: none;
     padding-left: 0.75rem;
     margin-top: 0.25rem;
-    animation: slideDown 0.3s ease-out;
+    display: block !important;
 }
 
-.accordion-item.open .accordion-content {
-    display: block;
+/* Esconder apenas quando tem a classe closed */
+.accordion-content.closed {
+    display: none !important;
 }
 
 /* ===== SUBCATEGORIAS ===== */
@@ -218,7 +299,25 @@ header .btn-modo:hover {
     flex: 1;
     padding: 2rem;
     background: var(--slate-50);
-    animation: fadeIn 0.4s ease-out;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.conteudo::-webkit-scrollbar {
+    width: 6px;
+}
+
+.conteudo::-webkit-scrollbar-track {
+    background: var(--slate-100);
+}
+
+.conteudo::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
+}
+
+.conteudo::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
 }
 
 /* ===== PRODUTOS GRID ===== */
@@ -249,6 +348,15 @@ header .btn-modo:hover {
     transition: var(--transition);
     animation: fadeIn 0.3s ease-out;
 }
+
+.card-produto:nth-child(1) { animation-delay: 0.05s; }
+.card-produto:nth-child(2) { animation-delay: 0.1s; }
+.card-produto:nth-child(3) { animation-delay: 0.15s; }
+.card-produto:nth-child(4) { animation-delay: 0.2s; }
+.card-produto:nth-child(5) { animation-delay: 0.25s; }
+.card-produto:nth-child(6) { animation-delay: 0.3s; }
+.card-produto:nth-child(7) { animation-delay: 0.35s; }
+.card-produto:nth-child(8) { animation-delay: 0.4s; }
 
 .card-produto:hover {
     transform: translateY(-4px);
@@ -339,7 +447,26 @@ header .btn-modo:hover {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* ===== SCROLLBAR ===== */
+/* ===== LOADING PRODUTOS ===== */
+.loading-produtos {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--slate-400);
+    grid-column: 1 / -1;
+}
+
+.loading-produtos .spinner {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--slate-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 1rem;
+}
+
+/* ===== SCROLLBAR GLOBAL ===== */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -371,8 +498,16 @@ header .btn-modo:hover {
         flex: 0 0 auto;
     }
 
+    header .header-center {
+        flex: 1;
+    }
+
     header .titulo-pagina {
         font-size: 1.3rem;
+    }
+
+    header .header-right {
+        flex: 0 0 auto;
     }
 
     header .btn-modo {
@@ -380,13 +515,27 @@ header .btn-modo:hover {
         padding: 0.4rem 0.8rem;
     }
 
+    .main-container {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+
     .sidebar {
-        width: 220px;
-        min-width: 220px;
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        max-height: 300px;
+        border-right: none;
+        border-bottom: 1px solid var(--slate-200);
         padding: 1rem;
+        position: static;
+        overflow-y: auto;
     }
 
     .conteudo {
+        height: auto;
+        overflow-y: visible;
         padding: 1rem;
     }
 
@@ -402,8 +551,7 @@ header .btn-modo:hover {
 
 @media (max-width: 480px) {
     .sidebar {
-        width: 180px;
-        min-width: 180px;
+        max-height: 200px;
         padding: 0.75rem;
     }
 
@@ -425,6 +573,10 @@ header .btn-modo:hover {
     }
 
     .preco-tag {
+        font-size: 1rem;
+    }
+
+    header .titulo-pagina {
         font-size: 1rem;
     }
 }

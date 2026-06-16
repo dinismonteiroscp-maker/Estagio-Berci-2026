@@ -25,7 +25,90 @@ try {
     exit;
 }
 
-// Rotas da API
+// ==================== FUNÇÕES AUXILIARES DE PASTAS ====================
+
+function criarPasta($caminho) {
+    if (!is_dir($caminho)) {
+        mkdir($caminho, 0777, true);
+        return true;
+    }
+    return false;
+}
+
+function removerPasta($caminho) {
+    if (!is_dir($caminho)) return true;
+    
+    $files = array_diff(scandir($caminho), array('.', '..'));
+    foreach ($files as $file) {
+        $filePath = $caminho . DIRECTORY_SEPARATOR . $file;
+        if (is_dir($filePath)) {
+            removerPasta($filePath);
+        } else {
+            unlink($filePath);
+        }
+    }
+    return rmdir($caminho);
+}
+
+function removerFicheiro($caminho) {
+    if (file_exists($caminho)) {
+        return unlink($caminho);
+    }
+    return true;
+}
+
+function slugify($text) {
+    // Remover caracteres especiais
+    $text = preg_replace('/[^a-zA-Z0-9\s\-]/', '', $text);
+    $text = str_replace(' ', '_', $text);
+    $text = preg_replace('/[^a-zA-Z0-9_\-]/', '', $text);
+    return trim($text);
+}
+
+function getCategoriaNome($id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT nome FROM categorias WHERE id = ?");
+    $stmt->execute([$id]);
+    $result = $stmt->fetch();
+    return $result ? slugify($result['nome']) : 'categoria_' . $id;
+}
+
+function getSubcategoriaNome($id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT nome FROM subcategorias WHERE id = ?");
+    $stmt->execute([$id]);
+    $result = $stmt->fetch();
+    return $result ? slugify($result['nome']) : 'subcategoria_' . $id;
+}
+
+function getSubcategoriaCategoriaId($subcategoriaId) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT categoria_id FROM subcategorias WHERE id = ?");
+    $stmt->execute([$subcategoriaId]);
+    $result = $stmt->fetch();
+    return $result ? $result['categoria_id'] : null;
+}
+
+function getCaminhoCategoria($categoriaId) {
+    $nome = getCategoriaNome($categoriaId);
+    return __DIR__ . '/../uploads/' . $nome;
+}
+
+function getCaminhoSubcategoria($subcategoriaId) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT categoria_id FROM subcategorias WHERE id = ?");
+    $stmt->execute([$subcategoriaId]);
+    $result = $stmt->fetch();
+    
+    if ($result) {
+        $categoriaNome = getCategoriaNome($result['categoria_id']);
+        $subcategoriaNome = getSubcategoriaNome($subcategoriaId);
+        return __DIR__ . '/../uploads/' . $categoriaNome . '/' . $subcategoriaNome;
+    }
+    return null;
+}
+
+// ==================== ROTAS DA API ====================
 $acao = $_GET['acao'] ?? '';
 
 switch ($acao) {
@@ -50,15 +133,42 @@ switch ($acao) {
         if (empty($id) || $id === 'null' || $id === 'undefined') {
             $stmt = $pdo->prepare("INSERT INTO categorias (nome) VALUES (?)");
             $stmt->execute([$nome]);
+            $id = $pdo->lastInsertId();
+            
+            // Criar pasta da categoria
+            $caminho = __DIR__ . '/../uploads/' . slugify($nome);
+            criarPasta($caminho);
         } else {
+            // Buscar nome antigo
+            $stmt = $pdo->prepare("SELECT nome FROM categorias WHERE id = ?");
+            $stmt->execute([$id]);
+            $oldNome = $stmt->fetchColumn();
+            
             $stmt = $pdo->prepare("UPDATE categorias SET nome = ? WHERE id = ?");
             $stmt->execute([$nome, $id]);
+            
+            // Renomear pasta se o nome mudou
+            $oldPath = __DIR__ . '/../uploads/' . slugify($oldNome);
+            $newPath = __DIR__ . '/../uploads/' . slugify($nome);
+            if (is_dir($oldPath) && $oldPath !== $newPath) {
+                rename($oldPath, $newPath);
+            }
         }
         echo json_encode(["sucesso" => true]);
         break;
 
     case 'eliminar_categoria':
         $id = $_POST['id'] ?? '';
+        
+        // Buscar nome da categoria
+        $stmt = $pdo->prepare("SELECT nome FROM categorias WHERE id = ?");
+        $stmt->execute([$id]);
+        $nome = $stmt->fetchColumn();
+        
+        // Remover pasta da categoria
+        $caminho = __DIR__ . '/../uploads/' . slugify($nome);
+        removerPasta($caminho);
+        
         $stmt = $pdo->prepare("DELETE FROM categorias WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(["sucesso" => true]);
@@ -73,15 +183,45 @@ switch ($acao) {
         if (empty($id) || $id === 'null' || $id === 'undefined') {
             $stmt = $pdo->prepare("INSERT INTO subcategorias (categoria_id, nome) VALUES (?, ?)");
             $stmt->execute([$categoria_id, $nome]);
+            $id = $pdo->lastInsertId();
+            
+            // Criar pasta da subcategoria dentro da categoria
+            $categoriaNome = getCategoriaNome($categoria_id);
+            $caminho = __DIR__ . '/../uploads/' . $categoriaNome . '/' . slugify($nome);
+            criarPasta($caminho);
         } else {
+            // Buscar nome antigo
+            $stmt = $pdo->prepare("SELECT nome, categoria_id FROM subcategorias WHERE id = ?");
+            $stmt->execute([$id]);
+            $oldData = $stmt->fetch();
+            $oldNome = $oldData['nome'];
+            $oldCategoriaId = $oldData['categoria_id'];
+            
             $stmt = $pdo->prepare("UPDATE subcategorias SET nome = ?, categoria_id = ? WHERE id = ?");
             $stmt->execute([$nome, $categoria_id, $id]);
+            
+            // Renomear pasta se o nome ou categoria mudou
+            $oldCategoriaNome = getCategoriaNome($oldCategoriaId);
+            $newCategoriaNome = getCategoriaNome($categoria_id);
+            $oldPath = __DIR__ . '/../uploads/' . $oldCategoriaNome . '/' . slugify($oldNome);
+            $newPath = __DIR__ . '/../uploads/' . $newCategoriaNome . '/' . slugify($nome);
+            
+            if (is_dir($oldPath) && $oldPath !== $newPath) {
+                rename($oldPath, $newPath);
+            }
         }
         echo json_encode(["sucesso" => true]);
         break;
 
     case 'eliminar_subcategoria':
         $id = $_POST['id'] ?? '';
+        
+        // Buscar caminho da subcategoria
+        $caminho = getCaminhoSubcategoria($id);
+        if ($caminho) {
+            removerPasta($caminho);
+        }
+        
         $stmt = $pdo->prepare("DELETE FROM subcategorias WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(["sucesso" => true]);
@@ -124,16 +264,35 @@ switch ($acao) {
 
         // Upload da imagem
         if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] === UPLOAD_ERR_OK) {
-            $ext = pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION);
-            $nomeFicheiro = uniqid('prod_', true) . '.' . $ext;
+            $caminhoSub = getCaminhoSubcategoria($subcategoria_id);
             
-            $uploadDir = __DIR__ . '/../uploads/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-            
-            if (move_uploaded_file($_FILES['imagem']['tmp_name'], $uploadDir . $nomeFicheiro)) {
-                $imagem_url = 'uploads/' . $nomeFicheiro;
+            if ($caminhoSub) {
+                // Criar pasta se não existir
+                if (!is_dir($caminhoSub)) {
+                    mkdir($caminhoSub, 0777, true);
+                }
+                
+                // Nome do ficheiro = nome do produto (slug)
+                $ext = pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION);
+                $nomeFicheiro = slugify($nome) . '.' . $ext;
+                $caminhoCompleto = $caminhoSub . '/' . $nomeFicheiro;
+                
+                // Se for edição, remover imagem antiga
+                if (!empty($id) && $id !== 'null' && $id !== 'undefined') {
+                    $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
+                    $stmt->execute([$id]);
+                    $oldImage = $stmt->fetchColumn();
+                    if ($oldImage && file_exists(__DIR__ . '/../' . $oldImage)) {
+                        unlink(__DIR__ . '/../' . $oldImage);
+                    }
+                }
+                
+                if (move_uploaded_file($_FILES['imagem']['tmp_name'], $caminhoCompleto)) {
+                    // Caminho relativo para guardar na base de dados
+                    $categoriaNome = getCategoriaNome(getSubcategoriaCategoriaId($subcategoria_id));
+                    $subcategoriaNome = getSubcategoriaNome($subcategoria_id);
+                    $imagem_url = 'uploads/' . $categoriaNome . '/' . $subcategoriaNome . '/' . $nomeFicheiro;
+                }
             }
         }
 
@@ -143,6 +302,13 @@ switch ($acao) {
             $stmt->execute([$subcategoria_id, $nome, $imagem_url, $tipo_preco, $preco_fixo]);
             $id = $pdo->lastInsertId();
         } else {
+            // Se não houver nova imagem, manter a antiga
+            if (empty($imagem_url)) {
+                $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
+                $stmt->execute([$id]);
+                $imagem_url = $stmt->fetchColumn();
+            }
+            
             $stmt = $pdo->prepare("UPDATE produtos SET subcategoria_id = ?, nome = ?, imagem_url = ?, tipo_preco = ?, preco_fixo = ? WHERE id = ?");
             $stmt->execute([$subcategoria_id, $nome, $imagem_url, $tipo_preco, $preco_fixo, $id]);
         }
@@ -173,6 +339,15 @@ switch ($acao) {
 
     case 'eliminar_produto':
         $id = $_POST['id'] ?? '';
+        
+        // Remover imagem do produto
+        $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
+        $stmt->execute([$id]);
+        $imagem = $stmt->fetchColumn();
+        if ($imagem && file_exists(__DIR__ . '/../' . $imagem)) {
+            unlink(__DIR__ . '/../' . $imagem);
+        }
+        
         $stmt = $pdo->prepare("DELETE FROM produtos WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(["sucesso" => true]);
