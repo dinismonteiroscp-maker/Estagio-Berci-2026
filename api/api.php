@@ -401,6 +401,18 @@ switch ($acao) {
             }
         }
         
+        // Buscar fatores pendentes (aparecem mesmo sem produto)
+        $stmt = $pdo->prepare("SELECT * FROM fatores WHERE escopo = 'produto_pendente' ORDER BY id ASC");
+        $stmt->execute();
+        $pendentes = $stmt->fetchAll();
+        foreach ($pendentes as $p) {
+            $p['opcoes'] = json_decode($p['opcoes'], true);
+            if (!in_array($p['id'], $fatoresIds)) {
+                $fatores[] = $p;
+                $fatoresIds[] = $p['id'];
+            }
+        }
+        
         echo json_encode($fatores);
         break;
 
@@ -467,9 +479,11 @@ switch ($acao) {
         echo json_encode(["sucesso" => true]);
         break;
 
+    // ==================== CONVERTER FATORES PENDENTES ====================
     case 'converter_fatores_pendentes':
         $data = json_decode(file_get_contents('php://input'), true);
         $produto_id = $data['produto_id'] ?? 0;
+        $produto_nome = $data['produto_nome'] ?? '';
         
         if ($produto_id > 0) {
             $stmt = $pdo->prepare("

@@ -525,6 +525,21 @@ async function guardarProduto(e) {
         console.log('Resposta do servidor:', result);
         
         if (result.sucesso) {
+            const produtoId = result.produto_id;
+            const produtoNome = document.getElementById('prod-nome').value;
+            
+            // Converter fatores pendentes para este produto
+            const convertRes = await fetch('api/api.php?acao=converter_fatores_pendentes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    produto_id: produtoId, 
+                    produto_nome: produtoNome 
+                })
+            });
+            const convertResult = await convertRes.json();
+            console.log('Fatores convertidos:', convertResult);
+            
             fecharModais();
             if (subcatAtiva) carregarProdutosAdmin(subcatAtiva);
         } else {
