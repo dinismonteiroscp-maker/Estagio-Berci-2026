@@ -187,7 +187,7 @@ switch ($acao) {
         $fatoresIds = [];
         
         // Buscar fatores globais
-        $stmt = $pdo->query("SELECT * FROM fatores WHERE escopo = 'global' AND ativo = 1 ORDER BY ordem ASC");
+        $stmt = $pdo->query("SELECT * FROM fatores WHERE escopo = 'global' ORDER BY ordem ASC");
         $globais = $stmt->fetchAll();
         foreach ($globais as $f) {
             $f['opcoes'] = json_decode($f['opcoes'], true);
@@ -202,7 +202,7 @@ switch ($acao) {
             $stmt = $pdo->prepare("
                 SELECT f.* FROM fatores f
                 JOIN subcategorias s ON s.categoria_id = f.entidade_id
-                WHERE f.escopo = 'categoria' AND s.id = ? AND f.ativo = 1
+                WHERE f.escopo = 'categoria' AND s.id = ?
                 ORDER BY f.ordem ASC
             ");
             $stmt->execute([$subcategoria_id]);
@@ -220,7 +220,7 @@ switch ($acao) {
         if ($subcategoria_id > 0) {
             $stmt = $pdo->prepare("
                 SELECT * FROM fatores 
-                WHERE escopo = 'subcategoria' AND entidade_id = ? AND f.ativo = 1
+                WHERE escopo = 'subcategoria' AND entidade_id = ?
                 ORDER BY ordem ASC
             ");
             $stmt->execute([$subcategoria_id]);
@@ -238,7 +238,7 @@ switch ($acao) {
         if ($produto_id > 0) {
             $stmt = $pdo->prepare("
                 SELECT * FROM fatores 
-                WHERE escopo = 'produto' AND entidade_id = ? AND f.ativo = 1
+                WHERE escopo = 'produto' AND entidade_id = ?
                 ORDER BY ordem ASC
             ");
             $stmt->execute([$produto_id]);
@@ -255,7 +255,7 @@ switch ($acao) {
         // Buscar fatores pendentes
         $stmt = $pdo->prepare("
             SELECT * FROM fatores 
-            WHERE escopo = 'produto_pendente' AND ativo = 1
+            WHERE escopo = 'produto_pendente'
             ORDER BY id ASC
         ");
         $stmt->execute();

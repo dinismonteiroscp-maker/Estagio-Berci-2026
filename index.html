@@ -6,28 +6,32 @@
     <title>Berci - Gráfica | Catálogo</title>
     
     <link rel="shortcut icon" href="image/favicon.ico" type="image/x-icon">
-    
-    <link rel="stylesheet" href="assets/css/loja.css">
+    <link rel="stylesheet" href="assets/css/loja.css?v=6">
 </head>
 <body class="loja-publica">
 
-    <header style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: #ffffff; border-bottom: 1px solid #e2e8f0; height: 80px;">
-        <div class="logo-area" style="flex: 1; display: flex; align-items: center;">
-            <img src="image/Logo.png" alt="Berci Gráfica" style="height: 50px; width: auto; object-fit: contain;">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            <span>A</span><span> </span><span>carregar</span><span>...</span>
         </div>
-        
+    </div>
+
+    <header>
+        <div class="logo-area">
+            <img src="image/Logo.png" alt="Berci Gráfica">
+        </div>
         <div style="flex: 2; text-align: center;">
-            <h1 class="titulo-pagina" style="font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">Catálogo</h1>
+            <h1 class="titulo-pagina">Catálogo</h1>
         </div>
-        
         <div style="flex: 1; display: flex; justify-content: flex-end;">
-            <a href="admin.html" class="btn-modo" style="text-decoration: none; color: #475569; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: 6px; background: #f1f5f9; transition: background 0.2s;">Modo Edição →</a>
+            <a href="admin.html" class="btn-modo">Modo Edição →</a>
         </div>
     </header>
 
     <div class="main-container">
         <aside class="sidebar" id="menu-categorias"></aside>
-
         <main class="conteudo">
             <div id="grelha-produtos" class="produtos-grid">
                 <p class="mensagem-inicial">Selecione uma categoria ou subcategoria para visualizar os produtos.</p>

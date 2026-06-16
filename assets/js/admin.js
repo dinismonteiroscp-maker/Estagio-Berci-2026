@@ -184,7 +184,7 @@ async function carregarProdutosAdmin(subcatId) {
                     </div>
                     ${img}
                     <h3>${escapeHtml(prod.nome)}</h3>
-                    <div class="preco-tag">${prod.tipo_preco === 'fixo' ? prod.preco_fixo + ' €' : 'Preco Dinamico'}</div>
+                    <div class="preco-tag">${prod.tipo_preco === 'fixo' ? prod.preco_fixo + ' €' : 'Preço Dinâmico'}</div>
                 `;
                 grid.appendChild(card);
             });
@@ -209,9 +209,12 @@ function abrirModalProduto(subcatId, produtoId = null) {
     document.getElementById('inputs-valores-fatores').innerHTML = '';
     document.getElementById('seccao-tabela-matriz').style.display = 'none';
     document.getElementById('modal-prod-titulo').innerText = produtoId ? "Editar Produto" : "Novo Produto";
-    toggleTipoPreco();
     
     carregarFatoresDisponiveis(subcatId, produtoId);
+    
+    document.getElementById('bloco-preco-fixo').style.display = 'block';
+    document.getElementById('bloco-preco-variavel').style.display = 'none';
+    document.getElementById('prod-tipo-preco').checked = false;
     
     document.getElementById('modal-produto').classList.add('open');
 }
@@ -224,8 +227,15 @@ function toggleTipoPreco() {
     if (blocoFixo) blocoFixo.style.display = isVariavel ? 'none' : 'block';
     if (blocoVariavel) blocoVariavel.style.display = isVariavel ? 'block' : 'none';
     
-    if (!isVariavel) {
+    if (isVariavel) {
+        const chks = document.querySelectorAll('.chk-fator:checked');
+        if (chks.length > 0) {
+            gerarMatriz();
+        }
+    } else {
         document.getElementById('seccao-tabela-matriz').style.display = 'none';
+        document.getElementById('container-tabela-matriz').innerHTML = '';
+        document.getElementById('inputs-valores-fatores').innerHTML = '';
     }
 }
 
@@ -246,8 +256,8 @@ function gerarMatriz() {
         const div = document.createElement('div');
         div.className = "fator-input-box";
         div.innerHTML = `
-            <label style="display:block; margin-bottom:0.4rem;">${fatorNome} (valores separados por virgula):</label>
-            <input type="text" class="input-valores-fator" data-fator-nome="${fatorNome}" placeholder="Ex: Pequeno, Medio, Grande" oninput="renderizarTabelaCombinatoria()">
+            <label style="display:block; margin-bottom:0.4rem;">${fatorNome} (valores separados por vírgula):</label>
+            <input type="text" class="input-valores-fator" data-fator-nome="${fatorNome}" placeholder="Ex: Pequeno, Médio, Grande" oninput="renderizarTabelaCombinatoria()">
             <button type="button" class="btn-dashed" style="margin-top:5px;" onclick="adicionarValor(this)">+ Adicionar valor</button>
         `;
         containerInputs.appendChild(div);
@@ -296,16 +306,16 @@ function renderizarTabelaCombinatoria() {
 
     let tableHtml = `<table style="width:100%; border-collapse:collapse;"><thead><tr>`;
     nomesFatores.forEach(n => tableHtml += `<th style="padding:8px;">${n}</th>`);
-    tableHtml += `<th style="padding:8px;">Preco (€)</th></tr></thead><tbody>`;
+    tableHtml += `<th style="padding:8px;">Preço (€)</th></tr></thead><tbody>`;
 
     combinacoes.forEach((combo) => {
         let arrCombo = Array.isArray(combo) ? combo : [combo];
         tableHtml += `<tr class="linha-matriz" data-combo='${JSON.stringify(arrCombo)}'>`;
-        arrCombo.forEach(v => tableHtml += `<td style="padding:8px;">${escapeHtml(v)}<\/td>`);
-        tableHtml += `<td style="padding:8px;"><input type="number" step="0.01" class="preco-variante-input" placeholder="0.00" style="width:100px;"><\/td>`;
+        arrCombo.forEach(v => tableHtml += `<td style="padding:8px;">${escapeHtml(v)}</td>`);
+        tableHtml += `<td style="padding:8px;"><input type="number" step="0.01" class="preco-variante-input" placeholder="0.00" style="width:100px;"></td>`;
     });
 
-    tableHtml += `<\/tbody><\/table>`;
+    tableHtml += `</tbody></table>`;
     document.getElementById('container-tabela-matriz').innerHTML = tableHtml;
 }
 
@@ -353,7 +363,7 @@ async function guardarProduto(e) {
         });
         
         if (variantes.length === 0) {
-            alert('Preencha pelo menos um preco na matriz!');
+            alert('Preencha pelo menos um preço na matriz!');
             return;
         }
         fd.append('variantes', JSON.stringify(variantes));
@@ -389,10 +399,12 @@ function abrirModalEditarProduto(prodStringEncoded) {
         if (prod.tipo_preco === 'fixo') {
             document.getElementById('prod-tipo-preco').checked = false;
             document.getElementById('prod-preco-fixo').value = prod.preco_fixo;
-            toggleTipoPreco();
+            document.getElementById('bloco-preco-fixo').style.display = 'block';
+            document.getElementById('bloco-preco-variavel').style.display = 'none';
         } else {
             document.getElementById('prod-tipo-preco').checked = true;
-            toggleTipoPreco();
+            document.getElementById('bloco-preco-fixo').style.display = 'none';
+            document.getElementById('bloco-preco-variavel').style.display = 'block';
             
             setTimeout(async () => {
                 if (prod.variantes && prod.variantes.length > 0) {
@@ -737,38 +749,62 @@ async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
         url += `&produto_id=${produtoId}`;
     }
     
-    const res = await fetch(url);
-    const fatores = await res.json();
-    
     const container = document.getElementById('fatores-checkboxes');
     if (!container) return;
+    container.innerHTML = '<div class="info-box">A carregar fatores...</div>';
     
-    container.innerHTML = '';
-    
-    if (fatores.length === 0) {
-        container.innerHTML = '<div class="info-box">Nenhum fator disponivel. Clique em "Gerir Fatores" para adicionar.</div>';
-        return;
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+        let fatores;
+        
+        try {
+            fatores = JSON.parse(text);
+        } catch (e) {
+            console.error('Resposta não é JSON válido:', text);
+            container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores. Verifique a ligação ao servidor.</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        if (!Array.isArray(fatores) || fatores.length === 0) {
+            container.innerHTML = '<div class="info-box">Nenhum fator disponível. Clique em "Gerir Fatores" para adicionar.</div>';
+            return;
+        }
+        
+        fatores.forEach(fator => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            
+            let aplicaTexto = '';
+            if (fator.escopo === 'global') aplicaTexto = ' (global)';
+            else if (fator.escopo === 'categoria') aplicaTexto = ' (categoria)';
+            else if (fator.escopo === 'subcategoria') aplicaTexto = ' (subcategoria)';
+            else if (fator.escopo === 'produto') aplicaTexto = ' (produto)';
+            else if (fator.escopo === 'produto_pendente') aplicaTexto = ' (pendente)';
+            
+            div.innerHTML = `
+                <input type="checkbox" class="chk-fator" value="${fator.id}" 
+                       data-nome="${fator.nome}" 
+                       onchange="gerarMatriz()">
+                <label>${escapeHtml(fator.nome)}<span style="color:#64748b; font-size:0.7rem;">${aplicaTexto}</span></label>
+            `;
+            container.appendChild(div);
+        });
+        
+        const isVariavel = document.getElementById('prod-tipo-preco').checked;
+        if (isVariavel) {
+            const chks = document.querySelectorAll('.chk-fator:checked');
+            if (chks.length > 0) {
+                gerarMatriz();
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar fatores:', error);
+        container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores. Tente novamente.</div>';
     }
-    
-    fatores.forEach(fator => {
-        const div = document.createElement('div');
-        div.className = 'checkbox-item';
-        
-        let aplicaTexto = '';
-        if (fator.escopo === 'global') aplicaTexto = ' (global)';
-        else if (fator.escopo === 'categoria') aplicaTexto = ' (categoria)';
-        else if (fator.escopo === 'subcategoria') aplicaTexto = ' (subcategoria)';
-        else if (fator.escopo === 'produto') aplicaTexto = ' (produto)';
-        else if (fator.escopo === 'produto_pendente') aplicaTexto = ' (pendente)';
-        
-        div.innerHTML = `
-            <input type="checkbox" class="chk-fator" value="${fator.id}" 
-                   data-nome="${fator.nome}" 
-                   onchange="gerarMatriz()">
-            <label>${escapeHtml(fator.nome)}<span style="color:#64748b; font-size:0.7rem;">${aplicaTexto}</span></label>
-        `;
-        container.appendChild(div);
-    });
 }
 
 // ==================== ATUALIZAR PRECOS ====================
@@ -790,7 +826,7 @@ async function carregarArvoreSelecao() {
             estruturaSelecao = dados;
         } else {
             estruturaSelecao = [];
-            console.error('Dados recebidos nao sao um array:', dados);
+            console.error('Dados recebidos não são um array:', dados);
         }
         
         selecionados = {
@@ -856,7 +892,7 @@ function renderizarArvoreSelecao() {
                         if (produto.tipo_preco === 'fixo') {
                             precoTexto = produto.preco_fixo + ' €';
                         } else {
-                            precoTexto = 'Preco Dinamico';
+                            precoTexto = 'Preço Dinâmico';
                         }
                         
                         html += `
@@ -1082,7 +1118,7 @@ async function aplicarAumentoPrecos() {
     const percentagem = parseFloat(document.getElementById('percentagem-aumento').value);
     
     if (isNaN(percentagem)) {
-        alert('Por favor, insira uma percentagem valida.');
+        alert('Por favor, insira uma percentagem válida.');
         return;
     }
     
@@ -1091,7 +1127,7 @@ async function aplicarAumentoPrecos() {
         return;
     }
     
-    const confirmMsg = `Tem certeza que deseja aplicar ${percentagem > 0 ? '+' : ''}${percentagem}% de ${percentagem > 0 ? 'aumento' : 'diminuicao'} nos precos dos itens selecionados?`;
+    const confirmMsg = `Tem certeza que deseja aplicar ${percentagem > 0 ? '+' : ''}${percentagem}% de ${percentagem > 0 ? 'aumento' : 'diminuição'} nos preços dos itens selecionados?`;
     if (!confirm(confirmMsg)) return;
     
     const dados = {
@@ -1111,14 +1147,14 @@ async function aplicarAumentoPrecos() {
         const result = await res.json();
         
         if (result.sucesso) {
-            alert(`Precos atualizados com sucesso!\n\nProdutos afetados: ${result.produtos_afetados}\nVariantes afetadas: ${result.variantes_afetadas}`);
+            alert(`Preços atualizados com sucesso!\n\nProdutos afetados: ${result.produtos_afetados}\nVariantes afetadas: ${result.variantes_afetadas}`);
             fecharModais();
             
             if (subcatAtiva) {
                 carregarProdutosAdmin(subcatAtiva);
             }
         } else {
-            alert('Erro ao atualizar precos: ' + (result.erro || 'Tente novamente'));
+            alert('Erro ao atualizar preços: ' + (result.erro || 'Tente novamente'));
         }
     } catch (error) {
         console.error('Erro:', error);
