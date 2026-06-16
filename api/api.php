@@ -58,7 +58,6 @@ function removerFicheiro($caminho) {
 }
 
 function slugify($text) {
-    // Remover caracteres especiais
     $text = preg_replace('/[^a-zA-Z0-9\s\-]/', '', $text);
     $text = str_replace(' ', '_', $text);
     $text = preg_replace('/[^a-zA-Z0-9_\-]/', '', $text);
@@ -135,11 +134,9 @@ switch ($acao) {
             $stmt->execute([$nome]);
             $id = $pdo->lastInsertId();
             
-            // Criar pasta da categoria
             $caminho = __DIR__ . '/../uploads/' . slugify($nome);
             criarPasta($caminho);
         } else {
-            // Buscar nome antigo
             $stmt = $pdo->prepare("SELECT nome FROM categorias WHERE id = ?");
             $stmt->execute([$id]);
             $oldNome = $stmt->fetchColumn();
@@ -147,7 +144,6 @@ switch ($acao) {
             $stmt = $pdo->prepare("UPDATE categorias SET nome = ? WHERE id = ?");
             $stmt->execute([$nome, $id]);
             
-            // Renomear pasta se o nome mudou
             $oldPath = __DIR__ . '/../uploads/' . slugify($oldNome);
             $newPath = __DIR__ . '/../uploads/' . slugify($nome);
             if (is_dir($oldPath) && $oldPath !== $newPath) {
@@ -160,12 +156,10 @@ switch ($acao) {
     case 'eliminar_categoria':
         $id = $_POST['id'] ?? '';
         
-        // Buscar nome da categoria
         $stmt = $pdo->prepare("SELECT nome FROM categorias WHERE id = ?");
         $stmt->execute([$id]);
         $nome = $stmt->fetchColumn();
         
-        // Remover pasta da categoria
         $caminho = __DIR__ . '/../uploads/' . slugify($nome);
         removerPasta($caminho);
         
@@ -185,12 +179,10 @@ switch ($acao) {
             $stmt->execute([$categoria_id, $nome]);
             $id = $pdo->lastInsertId();
             
-            // Criar pasta da subcategoria dentro da categoria
             $categoriaNome = getCategoriaNome($categoria_id);
             $caminho = __DIR__ . '/../uploads/' . $categoriaNome . '/' . slugify($nome);
             criarPasta($caminho);
         } else {
-            // Buscar nome antigo
             $stmt = $pdo->prepare("SELECT nome, categoria_id FROM subcategorias WHERE id = ?");
             $stmt->execute([$id]);
             $oldData = $stmt->fetch();
@@ -200,7 +192,6 @@ switch ($acao) {
             $stmt = $pdo->prepare("UPDATE subcategorias SET nome = ?, categoria_id = ? WHERE id = ?");
             $stmt->execute([$nome, $categoria_id, $id]);
             
-            // Renomear pasta se o nome ou categoria mudou
             $oldCategoriaNome = getCategoriaNome($oldCategoriaId);
             $newCategoriaNome = getCategoriaNome($categoria_id);
             $oldPath = __DIR__ . '/../uploads/' . $oldCategoriaNome . '/' . slugify($oldNome);
@@ -216,7 +207,6 @@ switch ($acao) {
     case 'eliminar_subcategoria':
         $id = $_POST['id'] ?? '';
         
-        // Buscar caminho da subcategoria
         $caminho = getCaminhoSubcategoria($id);
         if ($caminho) {
             removerPasta($caminho);
@@ -230,7 +220,7 @@ switch ($acao) {
     // ==================== PRODUTOS ====================
     case 'produtos':
         $subcategoria_id = $_GET['subcategoria_id'] ?? 0;
-        $stmt = $pdo->prepare("SELECT id, nome, imagem_url, tipo_preco, preco_fixo FROM produtos WHERE subcategoria_id = ? ORDER BY nome ASC");
+        $stmt = $pdo->prepare("SELECT id, nome, imagem_url, tipo_preco, preco_fixo, subcategoria_id FROM produtos WHERE subcategoria_id = ? ORDER BY nome ASC");
         $stmt->execute([$subcategoria_id]);
         $produtos = $stmt->fetchAll();
 
@@ -267,17 +257,14 @@ switch ($acao) {
             $caminhoSub = getCaminhoSubcategoria($subcategoria_id);
             
             if ($caminhoSub) {
-                // Criar pasta se não existir
                 if (!is_dir($caminhoSub)) {
                     mkdir($caminhoSub, 0777, true);
                 }
                 
-                // Nome do ficheiro = nome do produto (slug)
                 $ext = pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION);
                 $nomeFicheiro = slugify($nome) . '.' . $ext;
                 $caminhoCompleto = $caminhoSub . '/' . $nomeFicheiro;
                 
-                // Se for edição, remover imagem antiga
                 if (!empty($id) && $id !== 'null' && $id !== 'undefined') {
                     $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
                     $stmt->execute([$id]);
@@ -288,7 +275,6 @@ switch ($acao) {
                 }
                 
                 if (move_uploaded_file($_FILES['imagem']['tmp_name'], $caminhoCompleto)) {
-                    // Caminho relativo para guardar na base de dados
                     $categoriaNome = getCategoriaNome(getSubcategoriaCategoriaId($subcategoria_id));
                     $subcategoriaNome = getSubcategoriaNome($subcategoria_id);
                     $imagem_url = 'uploads/' . $categoriaNome . '/' . $subcategoriaNome . '/' . $nomeFicheiro;
@@ -302,7 +288,6 @@ switch ($acao) {
             $stmt->execute([$subcategoria_id, $nome, $imagem_url, $tipo_preco, $preco_fixo]);
             $id = $pdo->lastInsertId();
         } else {
-            // Se não houver nova imagem, manter a antiga
             if (empty($imagem_url)) {
                 $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
                 $stmt->execute([$id]);
@@ -340,7 +325,6 @@ switch ($acao) {
     case 'eliminar_produto':
         $id = $_POST['id'] ?? '';
         
-        // Remover imagem do produto
         $stmt = $pdo->prepare("SELECT imagem_url FROM produtos WHERE id = ?");
         $stmt->execute([$id]);
         $imagem = $stmt->fetchColumn();
@@ -366,38 +350,13 @@ switch ($acao) {
         $globais = $stmt->fetchAll();
         foreach ($globais as $f) {
             $f['opcoes'] = json_decode($f['opcoes'], true);
-            if (!in_array($f['id'], $fatoresIds)) {
-                $fatores[] = $f;
-                $fatoresIds[] = $f['id'];
-            }
-        }
-        
-        // Buscar fatores da categoria
-        if ($subcategoria_id > 0) {
-            $stmt = $pdo->prepare("
-                SELECT f.* FROM fatores f
-                JOIN subcategorias s ON s.categoria_id = f.entidade_id
-                WHERE f.escopo = 'categoria' AND s.id = ?
-                ORDER BY f.ordem ASC
-            ");
-            $stmt->execute([$subcategoria_id]);
-            $categoriaFatores = $stmt->fetchAll();
-            foreach ($categoriaFatores as $f) {
-                $f['opcoes'] = json_decode($f['opcoes'], true);
-                if (!in_array($f['id'], $fatoresIds)) {
-                    $fatores[] = $f;
-                    $fatoresIds[] = $f['id'];
-                }
-            }
+            $fatores[] = $f;
+            $fatoresIds[] = $f['id'];
         }
         
         // Buscar fatores da subcategoria
         if ($subcategoria_id > 0) {
-            $stmt = $pdo->prepare("
-                SELECT * FROM fatores 
-                WHERE escopo = 'subcategoria' AND entidade_id = ?
-                ORDER BY ordem ASC
-            ");
+            $stmt = $pdo->prepare("SELECT * FROM fatores WHERE escopo = 'subcategoria' AND entidade_id = ? ORDER BY ordem ASC");
             $stmt->execute([$subcategoria_id]);
             $subFatores = $stmt->fetchAll();
             foreach ($subFatores as $f) {
@@ -409,16 +368,17 @@ switch ($acao) {
             }
         }
         
-        // Buscar fatores do produto
-        if ($produto_id > 0) {
+        // Buscar fatores da categoria (através da subcategoria)
+        if ($subcategoria_id > 0) {
             $stmt = $pdo->prepare("
-                SELECT * FROM fatores 
-                WHERE escopo = 'produto' AND entidade_id = ?
-                ORDER BY ordem ASC
+                SELECT f.* FROM fatores f
+                JOIN subcategorias s ON s.categoria_id = f.entidade_id
+                WHERE f.escopo = 'categoria' AND s.id = ?
+                ORDER BY f.ordem ASC
             ");
-            $stmt->execute([$produto_id]);
-            $prodFatores = $stmt->fetchAll();
-            foreach ($prodFatores as $f) {
+            $stmt->execute([$subcategoria_id]);
+            $catFatores = $stmt->fetchAll();
+            foreach ($catFatores as $f) {
                 $f['opcoes'] = json_decode($f['opcoes'], true);
                 if (!in_array($f['id'], $fatoresIds)) {
                     $fatores[] = $f;
@@ -427,19 +387,17 @@ switch ($acao) {
             }
         }
         
-        // Buscar fatores pendentes
-        $stmt = $pdo->prepare("
-            SELECT * FROM fatores 
-            WHERE escopo = 'produto_pendente'
-            ORDER BY id ASC
-        ");
-        $stmt->execute();
-        $pendentes = $stmt->fetchAll();
-        foreach ($pendentes as $p) {
-            $p['opcoes'] = json_decode($p['opcoes'], true);
-            if (!in_array($p['id'], $fatoresIds)) {
-                $fatores[] = $p;
-                $fatoresIds[] = $p['id'];
+        // Buscar fatores do produto
+        if ($produto_id > 0) {
+            $stmt = $pdo->prepare("SELECT * FROM fatores WHERE escopo = 'produto' AND entidade_id = ? ORDER BY ordem ASC");
+            $stmt->execute([$produto_id]);
+            $prodFatores = $stmt->fetchAll();
+            foreach ($prodFatores as $f) {
+                $f['opcoes'] = json_decode($f['opcoes'], true);
+                if (!in_array($f['id'], $fatoresIds)) {
+                    $fatores[] = $f;
+                    $fatoresIds[] = $f['id'];
+                }
             }
         }
         
@@ -591,7 +549,6 @@ switch ($acao) {
             if (!empty($produtos)) {
                 $placeholders = implode(',', array_fill(0, count($produtos), '?'));
                 
-                // Atualizar preços fixos
                 $stmt = $pdo->prepare("
                     UPDATE produtos 
                     SET preco_fixo = preco_fixo * ?
@@ -601,7 +558,6 @@ switch ($acao) {
                 $stmt->execute($params);
                 $produtosAfetados = $stmt->rowCount();
                 
-                // Atualizar variantes
                 $stmt = $pdo->prepare("
                     UPDATE produto_variantes v
                     SET v.preco = v.preco * ?

@@ -27,6 +27,11 @@ function fecharModais() {
     contextoAtual = null;
 }
 
+// Placeholder SVG para imagens sem imagem
+function getPlaceholderImg() {
+    return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="260" height="180" viewBox="0 0 260 180"><rect width="260" height="180" fill="#f1f5f9"/><text x="130" y="90" font-family="Segoe UI, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">Sem Imagem</text></svg>');
+}
+
 // ==================== CATEGORIAS ====================
 async function carregarEstruturaAdmin() {
     try {
@@ -162,6 +167,9 @@ async function eliminarSubcategoria(id) {
 // ==================== PRODUTOS ====================
 async function carregarProdutosAdmin(subcatId) {
     try {
+        console.log('=== CARREGAR PRODUTOS ADMIN ===');
+        console.log('subcatId recebido:', subcatId);
+        
         subcatAtiva = subcatId;
         const res = await fetch(`api/api.php?acao=produtos&subcategoria_id=${subcatId}`);
         const produtos = await res.json();
@@ -170,11 +178,13 @@ async function carregarProdutosAdmin(subcatId) {
         if (!grid) return;
         grid.innerHTML = "";
 
+        const placeholderImg = getPlaceholderImg();
+
         if (Array.isArray(produtos) && produtos.length > 0) {
             produtos.forEach(prod => {
                 const card = document.createElement("div");
                 card.className = "card-produto";
-                let img = prod.imagem_url ? `<img src="${prod.imagem_url}">` : `<img src="https://via.placeholder.com/260x180?text=Sem+Imagem">`;
+                let img = prod.imagem_url ? `<img src="${prod.imagem_url}">` : `<img src="${placeholderImg}">`;
                 
                 const prodData = encodeURIComponent(JSON.stringify(prod));
                 card.innerHTML = `
@@ -201,16 +211,23 @@ async function carregarProdutosAdmin(subcatId) {
 }
 
 function abrirModalProduto(subcatId, produtoId = null) {
+    const subcategoriaId = parseInt(subcatId) || 0;
+    
+    console.log('=== ABRIR MODAL PRODUTO ===');
+    console.log('subcatId recebido:', subcatId);
+    console.log('subcategoriaId convertido:', subcategoriaId);
+    console.log('produtoId:', produtoId);
+    
     document.getElementById('form-produto').reset();
     document.getElementById('prod-id').value = produtoId || '';
-    document.getElementById('prod-subcat-id').value = subcatId;
+    document.getElementById('prod-subcat-id').value = subcategoriaId;
     document.getElementById('prod-img-atual').value = '';
     document.getElementById('container-tabela-matriz').innerHTML = '';
     document.getElementById('inputs-valores-fatores').innerHTML = '';
     document.getElementById('seccao-tabela-matriz').style.display = 'none';
     document.getElementById('modal-prod-titulo').innerText = produtoId ? "Editar Produto" : "Novo Produto";
     
-    carregarFatoresDisponiveis(subcatId, produtoId);
+    carregarFatoresDisponiveis(subcategoriaId, produtoId);
     
     document.getElementById('bloco-preco-fixo').style.display = 'block';
     document.getElementById('bloco-preco-variavel').style.display = 'none';
@@ -243,40 +260,147 @@ function gerarMatriz() {
     const chks = document.querySelectorAll('.chk-fator:checked');
     const containerInputs = document.getElementById('inputs-valores-fatores');
     
+    // Guardar valores existentes antes de limpar
+    const valoresExistentes = {};
+    document.querySelectorAll('.input-valores-fator').forEach(inp => {
+        const nome = inp.dataset.fatorNome;
+        if (inp.value && inp.value.trim() !== '') {
+            valoresExistentes[nome] = inp.value;
+        }
+    });
+    
+    // Limpar container
     if (containerInputs) containerInputs.innerHTML = "";
     
     if (chks.length === 0) {
         document.getElementById('seccao-tabela-matriz').style.display = 'none';
+        document.getElementById('container-tabela-matriz').innerHTML = '';
         return;
     }
     
     chks.forEach(chk => {
         const fatorNome = chk.dataset.nome;
+        const opcoesPredefinidas = chk.dataset.opcoes ? JSON.parse(chk.dataset.opcoes) : [];
         
         const div = document.createElement('div');
         div.className = "fator-input-box";
-        div.innerHTML = `
-            <label style="display:block; margin-bottom:0.4rem;">${fatorNome} (valores separados por vírgula):</label>
-            <input type="text" class="input-valores-fator" data-fator-nome="${fatorNome}" placeholder="Ex: Pequeno, Médio, Grande" oninput="renderizarTabelaCombinatoria()">
-            <button type="button" class="btn-dashed" style="margin-top:5px;" onclick="adicionarValor(this)">+ Adicionar valor</button>
-        `;
+        
+        // Verificar se já existem opções predefinidas
+        if (opcoesPredefinidas && opcoesPredefinidas.length > 0) {
+            // Usar opções predefinidas como select
+            let optionsHtml = opcoesPredefinidas.map(op => `<option value="${op}">${op}</option>`).join('');
+            // Verificar se há valor existente para este fator
+            const valorExistente = valoresExistentes[fatorNome] || '';
+            
+            div.innerHTML = `
+                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">${escapeHtml(fatorNome)}</label>
+                <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem;">
+                    <select class="input-valores-fator" data-fator-nome="${fatorNome}" 
+                            style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;" 
+                            onchange="renderizarTabelaCombinatoria()">
+                        ${optionsHtml}
+                    </select>
+                    <button type="button" class="btn-dashed" style="padding:4px 12px; margin:0; width:auto; white-space:nowrap;" 
+                            onclick="adicionarOpcaoSelect(this)">+ Adicionar</button>
+                </div>
+                <small style="color:#64748b; font-size:0.75rem;">Selecione uma opção ou adicione uma nova</small>
+            `;
+            
+            // Se houver valor existente, selecionar no select
+            if (valorExistente) {
+                const select = div.querySelector('.input-valores-fator');
+                if (select) {
+                    let found = false;
+                    for (let opt of select.options) {
+                        if (opt.value === valorExistente) {
+                            select.value = valorExistente;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        const option = document.createElement('option');
+                        option.value = valorExistente;
+                        option.text = valorExistente;
+                        select.appendChild(option);
+                        select.value = valorExistente;
+                    }
+                }
+            }
+        } else {
+            // Input de texto para valores personalizados
+            const valorExistente = valoresExistentes[fatorNome] || '';
+            div.innerHTML = `
+                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">${escapeHtml(fatorNome)}</label>
+                <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem;">
+                    <input type="text" class="input-valores-fator" data-fator-nome="${fatorNome}" 
+                           placeholder="Ex: Pequeno, Médio, Grande" 
+                           value="${valorExistente}"
+                           style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;" 
+                           oninput="renderizarTabelaCombinatoria()">
+                    <button type="button" class="btn-dashed" style="padding:4px 12px; margin:0; width:auto; white-space:nowrap;" 
+                            onclick="adicionarValor(this)">+ Adicionar</button>
+                </div>
+                <small style="color:#64748b; font-size:0.75rem;">Separe os valores por vírgula (ex: Pequeno, Médio, Grande)</small>
+            `;
+        }
         containerInputs.appendChild(div);
     });
     
-    renderizarTabelaCombinatoria();
+    // Verificar se há valores para renderizar a tabela
+    const inputs = document.querySelectorAll('.input-valores-fator');
+    let hasValues = false;
+    inputs.forEach(inp => {
+        if (inp.value && inp.value.trim() !== '') {
+            hasValues = true;
+        }
+    });
+    
+    if (hasValues) {
+        renderizarTabelaCombinatoria();
+    } else {
+        document.getElementById('seccao-tabela-matriz').style.display = 'none';
+        document.getElementById('container-tabela-matriz').innerHTML = '';
+    }
 }
 
 function adicionarValor(btn) {
     const input = btn.previousElementSibling;
-    const novoValor = prompt("Novo valor:");
-    if (novoValor) {
+    const novoValor = prompt("Digite o novo valor:");
+    if (novoValor && novoValor.trim() !== '') {
         const valorAtual = input.value;
-        if (valorAtual) {
-            input.value = valorAtual + ', ' + novoValor;
+        if (valorAtual && valorAtual.trim() !== '') {
+            // Verificar se o valor já existe
+            const valores = valorAtual.split(',').map(s => s.trim());
+            if (valores.includes(novoValor.trim())) {
+                alert('Este valor já existe!');
+                return;
+            }
+            input.value = valorAtual + ', ' + novoValor.trim();
         } else {
-            input.value = novoValor;
+            input.value = novoValor.trim();
         }
         input.dispatchEvent(new Event('input'));
+        renderizarTabelaCombinatoria();
+    }
+}
+
+function adicionarOpcaoSelect(btn) {
+    const select = btn.previousElementSibling;
+    const novaOpcao = prompt("Digite a nova opção:");
+    if (novaOpcao && novaOpcao.trim() !== '') {
+        // Verificar se a opção já existe
+        const opcoesExistentes = Array.from(select.options).map(opt => opt.value);
+        if (opcoesExistentes.includes(novaOpcao.trim())) {
+            alert('Esta opção já existe!');
+            return;
+        }
+        const option = document.createElement('option');
+        option.value = novaOpcao.trim();
+        option.text = novaOpcao.trim();
+        select.appendChild(option);
+        select.value = novaOpcao.trim();
+        renderizarTabelaCombinatoria();
     }
 }
 
@@ -286,8 +410,23 @@ function renderizarTabelaCombinatoria() {
     let listas = [];
     let nomesFatores = [];
 
+    // Guardar preços existentes antes de recriar a tabela
+    const precosExistentes = {};
+    document.querySelectorAll('.linha-matriz').forEach(tr => {
+        const comboKey = tr.dataset.combo;
+        const precoInput = tr.querySelector('.preco-variante-input');
+        if (precoInput && precoInput.value) {
+            precosExistentes[comboKey] = precoInput.value;
+        }
+    });
+
     inputs.forEach(inp => {
-        let valores = inp.value.split(',').map(s => s.trim()).filter(s => s !== "");
+        let valores = [];
+        if (inp.tagName === 'SELECT') {
+            valores = Array.from(inp.options).map(opt => opt.value);
+        } else {
+            valores = inp.value.split(',').map(s => s.trim()).filter(s => s !== "");
+        }
         if (valores.length > 0) {
             listas.push(valores);
             nomesFatores.push(inp.dataset.fatorNome);
@@ -296,6 +435,7 @@ function renderizarTabelaCombinatoria() {
 
     if (listas.length === 0) {
         if (seccaoTabela) seccaoTabela.style.display = 'none';
+        document.getElementById('container-tabela-matriz').innerHTML = '';
         return;
     }
 
@@ -304,15 +444,24 @@ function renderizarTabelaCombinatoria() {
     const cartesiano = (a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
     let combinacoes = listas.length > 1 ? cartesiano(listas) : listas[0].map(x => [x]);
 
-    let tableHtml = `<table style="width:100%; border-collapse:collapse;"><thead><tr>`;
-    nomesFatores.forEach(n => tableHtml += `<th style="padding:8px;">${n}</th>`);
-    tableHtml += `<th style="padding:8px;">Preço (€)</th></tr></thead><tbody>`;
+    let tableHtml = `<table style="width:100%; border-collapse:collapse; margin-top:0.5rem;">
+        <thead>
+            <tr style="background:#f1f5f9;">`;
+    nomesFatores.forEach(n => tableHtml += `<th style="padding:8px; text-align:left;">${n}</th>`);
+    tableHtml += `<th style="padding:8px; text-align:right; width:120px;">Preço (€)</th></tr></thead><tbody>`;
 
     combinacoes.forEach((combo) => {
         let arrCombo = Array.isArray(combo) ? combo : [combo];
-        tableHtml += `<tr class="linha-matriz" data-combo='${JSON.stringify(arrCombo)}'>`;
+        const comboKey = JSON.stringify(arrCombo);
+        const precoExistente = precosExistentes[comboKey] || '';
+        
+        tableHtml += `<tr class="linha-matriz" data-combo='${comboKey}' style="border-bottom:1px solid #e2e8f0;">`;
         arrCombo.forEach(v => tableHtml += `<td style="padding:8px;">${escapeHtml(v)}</td>`);
-        tableHtml += `<td style="padding:8px;"><input type="number" step="0.01" class="preco-variante-input" placeholder="0.00" style="width:100px;"></td>`;
+        tableHtml += `<td style="padding:8px; text-align:right;">
+            <input type="number" step="0.01" class="preco-variante-input" placeholder="0.00" 
+                   value="${precoExistente}"
+                   style="width:100px; padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; text-align:right;">
+        </td></tr>`;
     });
 
     tableHtml += `</tbody></table>`;
@@ -403,7 +552,10 @@ function abrirModalEditarProduto(prodStringEncoded) {
         console.log('Produto:', prod);
         console.log('Variantes:', prod.variantes);
         
-        abrirModalProduto(prod.subcategoria_id, prod.id);
+        const subcatId = prod.subcategoria_id || 0;
+        console.log('subcategoria_id do produto:', subcatId);
+        
+        abrirModalProduto(subcatId, prod.id);
         document.getElementById('prod-id').value = prod.id;
         document.getElementById('prod-nome').value = prod.nome;
         document.getElementById('prod-img-atual').value = prod.imagem_url || '';
@@ -459,37 +611,40 @@ function abrirModalEditarProduto(prodStringEncoded) {
                     
                     console.log('=== FATORES USADOS ===');
                     console.log('Fatores Set:', fatoresUsados);
-                    console.log('Fatores Array:', Array.from(fatoresUsados));
                     console.log('Valores:', fatoresValores);
                     
                     await new Promise(r => setTimeout(r, 500));
                     
                     const checkboxes = document.querySelectorAll('.chk-fator');
                     console.log('Checkboxes disponíveis:', checkboxes.length);
-                    checkboxes.forEach(chk => {
-                        console.log('Checkbox:', chk.dataset.nome);
-                    });
                     
-                    let marcados = 0;
                     checkboxes.forEach(chk => {
                         const nome = chk.dataset.nome;
-                        const nomeNormalizado = nome.trim().toLowerCase();
-                        let found = false;
-                        fatoresUsados.forEach(fator => {
-                            if (fator.trim().toLowerCase() === nomeNormalizado) {
-                                found = true;
-                            }
-                        });
-                        
-                        if (found) {
+                        if (fatoresUsados.has(nome)) {
                             chk.checked = true;
-                            marcados++;
-                            console.log('✅ Checkbox marcado:', nome);
-                        } else {
-                            console.log('❌ Checkbox NÃO marcado:', nome);
+                            console.log('✅ Checkbox marcado (nome exato):', nome);
                         }
                     });
-                    console.log('Total marcados:', marcados);
+                    
+                    checkboxes.forEach(chk => {
+                        const nome = chk.dataset.nome;
+                        let encontrou = false;
+                        fatoresUsados.forEach(fator => {
+                            if (nome.includes(fator) || fator.includes(nome) || 
+                                nome.replace(/[^a-zA-Z0-9]/g, '') === fator.replace(/[^a-zA-Z0-9]/g, '')) {
+                                encontrou = true;
+                            }
+                        });
+                        if (encontrou && !chk.checked) {
+                            chk.checked = true;
+                            console.log('✅ Checkbox marcado (fallback):', nome);
+                        }
+                    });
+                    
+                    if (document.querySelectorAll('.chk-fator:checked').length === 0 && checkboxes.length > 0) {
+                        checkboxes[0].checked = true;
+                        console.log('✅ Checkbox marcado (primeiro disponível):', checkboxes[0].dataset.nome);
+                    }
                     
                     gerarMatriz();
                     
@@ -497,18 +652,12 @@ function abrirModalEditarProduto(prodStringEncoded) {
                         const inputs = document.querySelectorAll('.input-valores-fator');
                         inputs.forEach(input => {
                             const nome = input.dataset.fatorNome;
-                            const nomeNormalizado = nome.trim().toLowerCase();
-                            let found = false;
                             Object.keys(fatoresValores).forEach(key => {
-                                if (key.trim().toLowerCase() === nomeNormalizado) {
-                                    found = true;
+                                if (key === nome) {
                                     input.value = fatoresValores[key].join(', ');
                                     console.log('✅ Valor preenchido para', nome, ':', fatoresValores[key].join(', '));
                                 }
                             });
-                            if (!found) {
-                                console.log('❌ Nenhum valor para:', nome);
-                            }
                         });
                         
                         renderizarTabelaCombinatoria();
@@ -835,19 +984,30 @@ async function eliminarFator(id) {
 }
 
 async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
-    let url = `api/api.php?acao=listar_fatores&subcategoria_id=${subcategoriaId}`;
+    const subcatId = parseInt(subcategoriaId) || 0;
+    
+    let url = `api/api.php?acao=listar_fatores&subcategoria_id=${subcatId}`;
     if (produtoId && produtoId !== '') {
         url += `&produto_id=${produtoId}`;
     }
     
+    console.log('=== A CARREGAR FATORES ===');
+    console.log('URL:', url);
+    console.log('subcatId:', subcatId);
+    console.log('produtoId:', produtoId);
+    
     const container = document.getElementById('fatores-checkboxes');
-    if (!container) return;
+    if (!container) {
+        console.error('Container #fatores-checkboxes não encontrado!');
+        return;
+    }
+    
     container.innerHTML = '<div class="info-box">A carregar fatores...</div>';
     
     try {
         const res = await fetch(url);
         const fatores = await res.json();
-        console.log('Fatores carregados:', fatores);
+        console.log('Fatores recebidos da API:', fatores);
         
         container.innerHTML = '';
         
@@ -857,6 +1017,8 @@ async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
         }
         
         fatores.forEach(fator => {
+            console.log('A renderizar fator:', fator.nome, 'escopo:', fator.escopo);
+            
             const div = document.createElement('div');
             div.className = 'checkbox-item';
             
@@ -867,14 +1029,20 @@ async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
             else if (fator.escopo === 'produto') aplicaTexto = ' (produto)';
             else if (fator.escopo === 'produto_pendente') aplicaTexto = ' (pendente)';
             
+            const opcoes = fator.opcoes || [];
+            
             div.innerHTML = `
                 <input type="checkbox" class="chk-fator" value="${fator.id}" 
                        data-nome="${fator.nome}" 
+                       data-id="${fator.id}"
+                       data-opcoes='${JSON.stringify(opcoes)}'
                        onchange="gerarMatriz()">
                 <label>${escapeHtml(fator.nome)}<span style="color:#64748b; font-size:0.7rem;">${aplicaTexto}</span></label>
             `;
             container.appendChild(div);
         });
+        
+        console.log('Fatores renderizados com sucesso! Total:', fatores.length);
         
         const isVariavel = document.getElementById('prod-tipo-preco').checked;
         if (isVariavel) {
@@ -886,7 +1054,7 @@ async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
         
     } catch (error) {
         console.error('Erro ao carregar fatores:', error);
-        container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores. Tente novamente.</div>';
+        container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores: ' + error.message + '</div>';
     }
 }
 
