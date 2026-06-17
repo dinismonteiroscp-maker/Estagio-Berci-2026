@@ -1,6 +1,6 @@
 /* =========================================================================
    BERCI - SISTEMA DE GESTÃO (PAINEL ADMIN)
-   Design Premium - Tons Suaves e Elegantes
+   Design Premium - Tons Suaves e Elegantes - COMPLETAMENTE RESPONSIVO
    ========================================================================= */
 
 /* ===== 1. RESET E VARIÁVEIS ===== */
@@ -36,7 +36,7 @@
     --warning: #d4b88a;
     --warning-light: #f5f0ea;
     
-    /* Tipografia - TODA A INTERFACE USA INTER */
+    /* Tipografia */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     
     /* Espaçamento */
@@ -74,6 +74,8 @@ html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    overflow: hidden;
 }
 
 body {
@@ -83,12 +85,13 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
     font-weight: 400;
     line-height: 1.6;
 }
 
-/* ===== 2. PRELOADER - Premium ===== */
+/* ===== 2. PRELOADER ===== */
 .preloader {
     position: fixed;
     top: 0;
@@ -303,6 +306,7 @@ header {
     backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     height: 80px;
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -335,7 +339,6 @@ header .header-center {
     text-align: center;
 }
 
-/* ===== TÍTULO PRINCIPAL - IGUAL EM AMBOS OS SITES ===== */
 header .titulo-pagina {
     font-size: 1.6rem;
     font-weight: 600;
@@ -467,7 +470,6 @@ header .header-right {
     justify-content: center;
 }
 
-/* ===== 7. BOTÃO MODO - IGUAL EM AMBOS OS SITES ===== */
 .btn-modo {
     padding: 10px 24px;
     border-radius: var(--radius-full);
@@ -556,16 +558,17 @@ header .header-right {
     border-color: var(--berci-accent);
 }
 
-/* ===== 8. LAYOUT PRINCIPAL ===== */
+/* ===== 7. LAYOUT PRINCIPAL - SCROLL INDEPENDENTE ===== */
 .main-container {
     display: flex;
     flex: 1;
     width: 100%;
+    min-height: 0;
     height: calc(100vh - 80px);
     overflow: hidden;
 }
 
-/* ===== 9. SIDEBAR ===== */
+/* ===== 8. SIDEBAR - SCROLL INDEPENDENTE ===== */
 .sidebar,
 #menu-admin,
 #menu-categorias {
@@ -576,8 +579,10 @@ header .header-right {
     border-right: 1px solid rgba(0, 0, 0, 0.04);
     padding: var(--spacing-lg) var(--spacing-md);
     height: 100%;
+    max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    flex-shrink: 0;
 }
 
 .sidebar::-webkit-scrollbar,
@@ -602,6 +607,34 @@ header .header-right {
 .sidebar::-webkit-scrollbar-thumb:hover,
 #menu-admin::-webkit-scrollbar-thumb:hover,
 #menu-categorias::-webkit-scrollbar-thumb:hover {
+    background: var(--berci-mid-gray);
+}
+
+/* ===== 9. CONTEÚDO - SCROLL INDEPENDENTE ===== */
+.conteudo {
+    flex: 1;
+    padding: var(--spacing-xl);
+    background: var(--berci-cream);
+    overflow-y: auto;
+    height: 100%;
+    max-height: 100%;
+    min-width: 0;
+}
+
+.conteudo::-webkit-scrollbar {
+    width: 4px;
+}
+
+.conteudo::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.conteudo::-webkit-scrollbar-thumb {
+    background: var(--berci-light-gray);
+    border-radius: 2px;
+}
+
+.conteudo::-webkit-scrollbar-thumb:hover {
     background: var(--berci-mid-gray);
 }
 
@@ -707,33 +740,7 @@ header .header-right {
     align-items: center;
 }
 
-/* ===== 12. CONTEÚDO ===== */
-.conteudo {
-    flex: 1;
-    padding: var(--spacing-xl);
-    background: var(--berci-cream);
-    overflow-y: auto;
-    height: 100%;
-}
-
-.conteudo::-webkit-scrollbar {
-    width: 4px;
-}
-
-.conteudo::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.conteudo::-webkit-scrollbar-thumb {
-    background: var(--berci-light-gray);
-    border-radius: 2px;
-}
-
-.conteudo::-webkit-scrollbar-thumb:hover {
-    background: var(--berci-mid-gray);
-}
-
-/* ===== 13. PRODUTOS GRID ===== */
+/* ===== 12. PRODUTOS GRID ===== */
 .produtos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -749,7 +756,7 @@ header .header-right {
     padding: var(--spacing-xxl) 0;
 }
 
-/* ===== 14. CARD PRODUTO ===== */
+/* ===== 13. CARD PRODUTO ===== */
 .card-produto {
     background: var(--berci-white);
     border-radius: var(--radius-lg);
@@ -820,7 +827,6 @@ header .header-right {
     color: var(--berci-accent-dark);
 }
 
-/* Card especial - Adicionar */
 .dashed-card {
     border: 2px dashed var(--berci-light-gray);
     background: transparent;
@@ -849,7 +855,7 @@ header .header-right {
     transform: scale(1.05);
 }
 
-/* ===== 15. MODAIS ===== */
+/* ===== 14. MODAIS ===== */
 .modal {
     display: none;
     position: fixed;
@@ -929,7 +935,7 @@ header .header-right {
     font-family: var(--font-primary);
 }
 
-/* ===== 16. FORMULÁRIOS ===== */
+/* ===== 15. FORMULÁRIOS ===== */
 .form-group {
     margin-bottom: var(--spacing-md);
 }
@@ -969,7 +975,7 @@ header .header-right {
     color: var(--berci-light-gray);
 }
 
-/* ===== 17. CHECKBOX GROUP ===== */
+/* ===== 16. CHECKBOX GROUP ===== */
 .checkbox-group {
     display: flex;
     flex-direction: column;
@@ -999,7 +1005,7 @@ header .header-right {
     transition: var(--transition-base);
 }
 
-/* ===== 18. FATORES ===== */
+/* ===== 17. FATORES ===== */
 .fator-input-box {
     background: var(--berci-cream);
     padding: var(--spacing-md);
@@ -1029,7 +1035,7 @@ header .header-right {
     box-shadow: 0 0 0 4px var(--berci-accent-glow);
 }
 
-/* ===== 19. TABELA MATRIZ ===== */
+/* ===== 18. TABELA MATRIZ ===== */
 .table-wrapper {
     overflow-x: auto;
     margin-top: var(--spacing-sm);
@@ -1081,7 +1087,7 @@ tr:hover td {
     box-shadow: 0 0 0 4px var(--berci-accent-glow);
 }
 
-/* ===== 20. INFO BOX ===== */
+/* ===== 19. INFO BOX ===== */
 .info-box {
     background: var(--berci-cream);
     padding: var(--spacing-md) var(--spacing-lg);
@@ -1092,7 +1098,7 @@ tr:hover td {
     border-left: 3px solid var(--berci-accent);
 }
 
-/* ===== 21. FATOR ROW ===== */
+/* ===== 20. FATOR ROW ===== */
 .fator-row {
     display: flex;
     justify-content: space-between;
@@ -1125,7 +1131,7 @@ tr:hover td {
     gap: var(--spacing-sm);
 }
 
-/* ===== 22. ÁRVORE DE SELEÇÃO ===== */
+/* ===== 21. ÁRVORE DE SELEÇÃO ===== */
 .tree-item {
     margin-left: var(--spacing-lg);
     margin-top: var(--spacing-xs);
@@ -1179,7 +1185,7 @@ tr:hover td {
     padding: var(--spacing-lg);
 }
 
-/* ===== 23. SCROLLBAR GLOBAL ===== */
+/* ===== 22. SCROLLBAR GLOBAL ===== */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -1198,8 +1204,12 @@ tr:hover td {
     background: var(--berci-mid-gray);
 }
 
-/* ===== 24. RESPONSIVIDADE COMPLETA ===== */
-@media (max-width: 1200px) {
+/* ============================================================
+   RESPONSIVIDADE COMPLETA - Desktop, Tablet e Mobile
+   ============================================================ */
+
+/* ===== 23. TABLET (até 1024px) ===== */
+@media (max-width: 1024px) {
     .sidebar,
     #menu-admin,
     #menu-categorias {
@@ -1207,11 +1217,31 @@ tr:hover td {
         min-width: 280px;
         max-width: 280px;
     }
-}
-
-@media (max-width: 992px) {
+    
+    .produtos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: var(--spacing-md);
+    }
+    
     header .titulo-pagina {
         font-size: 1.4rem;
+    }
+}
+
+/* ===== 24. TABLET (até 820px) ===== */
+@media (max-width: 820px) {
+    .sidebar,
+    #menu-admin,
+    #menu-categorias {
+        width: 240px;
+        min-width: 240px;
+        max-width: 240px;
+        padding: var(--spacing-md);
+    }
+    
+    .btn {
+        padding: 8px 18px;
+        font-size: 0.85rem;
     }
     
     .btn-modo {
@@ -1219,13 +1249,14 @@ tr:hover td {
         font-size: 0.85rem;
     }
     
-    .btn {
-        padding: 8px 18px;
-        font-size: 0.85rem;
+    header .titulo-pagina {
+        font-size: 1.3rem;
     }
 }
 
+/* ===== 25. TABLET/MOBILE GRANDE (até 768px) ===== */
 @media (max-width: 768px) {
+    /* Header responsivo */
     header {
         flex-wrap: wrap;
         height: auto;
@@ -1276,12 +1307,19 @@ tr:hover td {
         font-size: 0.9rem;
     }
 
+    .btn {
+        font-size: 0.75rem;
+        padding: 6px 14px;
+    }
+
+    /* Layout muda para coluna */
     .main-container {
         flex-direction: column;
         height: auto;
         overflow: visible;
     }
 
+    /* Sidebar no topo com altura limitada e scroll */
     .sidebar,
     #menu-admin,
     #menu-categorias {
@@ -1294,17 +1332,25 @@ tr:hover td {
         border-bottom: 1px solid rgba(0, 0, 0, 0.04);
         padding: var(--spacing-md);
         overflow-y: auto;
+        flex-shrink: 0;
     }
 
+    /* Conteúdo abaixo da sidebar */
     .conteudo {
         height: auto;
         overflow-y: visible;
         padding: var(--spacing-md);
+        max-height: none;
     }
 
+    /* Grid de produtos adaptado */
     .produtos-grid {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: var(--spacing-md);
+    }
+
+    .card-produto img {
+        height: 160px;
     }
 
     .modal-content {
@@ -1314,12 +1360,8 @@ tr:hover td {
         border-radius: var(--radius-lg);
     }
 
-    .tree-item-produto {
-        margin-left: var(--spacing-md);
-    }
-
-    .card-produto img {
-        height: 160px;
+    .modal-content h2 {
+        font-size: 1.2rem;
     }
 
     .preloader-logo img {
@@ -1336,7 +1378,9 @@ tr:hover td {
     }
 }
 
+/* ===== 26. MOBILE GRANDE (até 576px) ===== */
 @media (max-width: 576px) {
+    /* Header ainda mais compacto */
     header {
         padding: var(--spacing-xs) var(--spacing-sm);
         min-height: 60px;
@@ -1365,6 +1409,17 @@ tr:hover td {
         font-size: 0.8rem;
     }
 
+    .btn {
+        font-size: 0.75rem;
+        padding: 6px 14px;
+    }
+
+    .btn-sm {
+        padding: 4px 10px;
+        font-size: 0.7rem;
+    }
+
+    /* Sidebar mais compacta */
     .sidebar,
     #menu-admin,
     #menu-categorias {
@@ -1372,6 +1427,17 @@ tr:hover td {
         padding: var(--spacing-sm);
     }
 
+    .accordion-header {
+        font-size: 0.85rem;
+        padding: 4px 6px;
+    }
+
+    .subcat-btn {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+    }
+
+    /* Grid 2 colunas */
     .produtos-grid {
         grid-template-columns: 1fr 1fr;
         gap: var(--spacing-sm);
@@ -1391,8 +1457,10 @@ tr:hover td {
 
     .preco-tag {
         font-size: 0.95rem;
+        padding-top: var(--spacing-sm);
     }
 
+    /* Modais mais compactos */
     .modal-content {
         padding: var(--spacing-md);
         border-radius: var(--radius-md);
@@ -1402,9 +1470,13 @@ tr:hover td {
         font-size: 1rem;
     }
 
-    .btn {
-        font-size: 0.75rem;
-        padding: 6px 14px;
+    .form-group {
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .form-control {
+        padding: 8px 12px;
+        font-size: 0.85rem;
     }
 
     .preloader-logo img {
@@ -1424,16 +1496,17 @@ tr:hover td {
         width: 4px;
         height: 4px;
     }
+
+    .mensagem-inicial {
+        font-size: 0.85rem;
+        padding: var(--spacing-lg) 0;
+    }
 }
 
+/* ===== 27. MOBILE PEQUENO (até 400px) ===== */
 @media (max-width: 400px) {
     header .titulo-pagina {
         font-size: 0.85rem;
-    }
-
-    .btn-modo {
-        font-size: 0.6rem;
-        padding: 3px 8px;
     }
 
     header .header-actions .btn {
@@ -1441,20 +1514,201 @@ tr:hover td {
         padding: 3px 8px;
     }
 
+    .btn-modo {
+        font-size: 0.6rem;
+        padding: 3px 8px;
+    }
+
+    .btn {
+        font-size: 0.65rem;
+        padding: 5px 12px;
+    }
+
+    .sidebar,
+    #menu-admin,
+    #menu-categorias {
+        max-height: 160px;
+        padding: var(--spacing-xs);
+    }
+
+    .accordion-header {
+        font-size: 0.75rem;
+        padding: 3px 5px;
+    }
+
+    .subcat-btn {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
+
+    /* Grid 2 colunas com espaçamento mínimo */
     .produtos-grid {
         grid-template-columns: 1fr 1fr;
         gap: var(--spacing-xs);
+    }
+
+    .card-produto {
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-md);
+    }
+
+    .card-produto img {
+        height: 100px;
+        border-radius: var(--radius-sm);
+    }
+
+    .card-produto h3 {
+        font-size: 0.75rem;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .preco-tag {
+        font-size: 0.85rem;
+        padding-top: var(--spacing-xs);
+        border-top-width: 0.5px;
+    }
+
+    .modal-content {
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-sm);
+    }
+
+    .modal-content h2 {
+        font-size: 0.9rem;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .form-control {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .info-box {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.75rem;
+    }
+}
+
+/* ===== 28. MOBILE MUITO PEQUENO (até 340px) ===== */
+@media (max-width: 340px) {
+    header .titulo-pagina {
+        font-size: 0.7rem;
+    }
+
+    header .header-actions .btn {
+        font-size: 0.5rem;
+        padding: 2px 6px;
+    }
+
+    .btn-modo {
+        font-size: 0.5rem;
+        padding: 2px 6px;
+        border-width: 1px;
+    }
+
+    .produtos-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+    }
+
+    .card-produto img {
+        height: 80px;
+    }
+
+    .card-produto h3 {
+        font-size: 0.65rem;
+    }
+
+    .preco-tag {
+        font-size: 0.75rem;
+    }
+
+    .sidebar,
+    #menu-admin,
+    #menu-categorias {
+        max-height: 140px;
+        padding: 2px;
+    }
+
+    .accordion-header {
+        font-size: 0.65rem;
+        padding: 2px 4px;
+    }
+
+    .subcat-btn {
+        font-size: 0.6rem;
+        padding: 2px 6px;
+    }
+
+    .btn-action {
+        width: 24px;
+        height: 24px;
+        font-size: 0.6rem;
+    }
+}
+
+/* ===== 29. ORIENTAÇÃO PAISAGEM EM MOBILE ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+    .main-container {
+        flex-direction: row;
+        height: calc(100vh - 60px);
+    }
+
+    .sidebar,
+    #menu-admin,
+    #menu-categorias {
+        width: 35%;
+        min-width: 35%;
+        max-width: 35%;
+        max-height: 100%;
+        height: 100%;
+        border-right: 1px solid rgba(0, 0, 0, 0.04);
+        border-bottom: none;
+        padding: var(--spacing-sm);
+    }
+
+    .conteudo {
+        height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
+        padding: var(--spacing-sm);
+    }
+
+    .produtos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: var(--spacing-sm);
     }
 
     .card-produto img {
         height: 100px;
     }
 
-    .card-produto h3 {
-        font-size: 0.75rem;
+    header {
+        height: 60px;
+        min-height: 60px;
+        padding: 0 var(--spacing-md);
     }
 
-    .preco-tag {
-        font-size: 0.85rem;
+    header .logo-area img {
+        height: 28px;
+    }
+
+    header .titulo-pagina {
+        font-size: 1rem;
+    }
+
+    .btn {
+        padding: 4px 12px;
+        font-size: 0.7rem;
+    }
+
+    .btn-modo {
+        padding: 4px 12px;
+        font-size: 0.7rem;
+    }
+
+    .modal-content {
+        max-height: 90vh;
+        padding: var(--spacing-md);
     }
 }

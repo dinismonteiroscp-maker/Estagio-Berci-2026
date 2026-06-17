@@ -114,11 +114,13 @@ switch ($acao) {
     
     // ==================== CATEGORIAS ====================
     case 'listar_estrutura':
-        $stmt = $pdo->query("SELECT id, nome FROM categorias ORDER BY nome ASC");
+        // ALTERADO: Ordenar por data de criação (mais antigas primeiro)
+        $stmt = $pdo->query("SELECT id, nome, created_at FROM categorias ORDER BY created_at ASC");
         $categorias = $stmt->fetchAll();
         
         foreach ($categorias as &$cat) {
-            $stmtSub = $pdo->prepare("SELECT id, nome FROM subcategorias WHERE categoria_id = ? ORDER BY nome ASC");
+            // ALTERADO: Ordenar subcategorias por data de criação (mais antigas primeiro)
+            $stmtSub = $pdo->prepare("SELECT id, nome, created_at FROM subcategorias WHERE categoria_id = ? ORDER BY created_at ASC");
             $stmtSub->execute([$cat['id']]);
             $cat['subcategorias'] = $stmtSub->fetchAll();
         }
@@ -220,7 +222,8 @@ switch ($acao) {
     // ==================== PRODUTOS ====================
     case 'produtos':
         $subcategoria_id = $_GET['subcategoria_id'] ?? 0;
-        $stmt = $pdo->prepare("SELECT id, nome, imagem_url, tipo_preco, preco_fixo, subcategoria_id FROM produtos WHERE subcategoria_id = ? ORDER BY nome ASC");
+        // ALTERADO: Ordenar produtos por data de criação (mais antigos primeiro)
+        $stmt = $pdo->prepare("SELECT id, nome, imagem_url, tipo_preco, preco_fixo, subcategoria_id, created_at FROM produtos WHERE subcategoria_id = ? ORDER BY created_at ASC");
         $stmt->execute([$subcategoria_id]);
         $produtos = $stmt->fetchAll();
 
@@ -502,16 +505,19 @@ switch ($acao) {
 
     // ==================== ESTRUTURA COMPLETA PARA ATUALIZAR PRECOS ====================
     case 'listar_estrutura_completa':
-        $stmt = $pdo->query("SELECT id, nome FROM categorias ORDER BY nome ASC");
+        // ALTERADO: Ordenar por data de criação (mais antigas primeiro)
+        $stmt = $pdo->query("SELECT id, nome, created_at FROM categorias ORDER BY created_at ASC");
         $categorias = $stmt->fetchAll();
         
         foreach ($categorias as &$cat) {
-            $stmtSub = $pdo->prepare("SELECT id, nome FROM subcategorias WHERE categoria_id = ? ORDER BY nome ASC");
+            // ALTERADO: Ordenar subcategorias por data de criação (mais antigas primeiro)
+            $stmtSub = $pdo->prepare("SELECT id, nome, created_at FROM subcategorias WHERE categoria_id = ? ORDER BY created_at ASC");
             $stmtSub->execute([$cat['id']]);
             $subcategorias = $stmtSub->fetchAll();
             
             foreach ($subcategorias as &$sub) {
-                $stmtProd = $pdo->prepare("SELECT id, nome, tipo_preco, preco_fixo FROM produtos WHERE subcategoria_id = ? ORDER BY nome ASC");
+                // ALTERADO: Ordenar produtos por data de criação (mais antigos primeiro)
+                $stmtProd = $pdo->prepare("SELECT id, nome, tipo_preco, preco_fixo, created_at FROM produtos WHERE subcategoria_id = ? ORDER BY created_at ASC");
                 $stmtProd->execute([$sub['id']]);
                 $sub['produtos'] = $stmtProd->fetchAll();
             }

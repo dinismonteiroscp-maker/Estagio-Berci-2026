@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS fatores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     tipo ENUM('select', 'checkbox', 'text', 'numero') DEFAULT 'select',
-    escopo ENUM('global', 'categoria', 'subcategoria', 'produto') DEFAULT 'global',
+    escopo ENUM('global', 'categoria', 'subcategoria', 'produto', 'produto_pendente') DEFAULT 'global',
     entidade_id INT NULL COMMENT 'ID da categoria/subcategoria/produto dependendo do escopo',
     opcoes JSON NULL COMMENT 'Opções disponíveis para selects',
     obrigatorio BOOLEAN DEFAULT FALSE,
