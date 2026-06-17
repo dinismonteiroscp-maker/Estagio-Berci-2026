@@ -1,4 +1,7 @@
-// ==================== VARIAVEIS GLOBAIS ====================
+// ==================== BERCI - ADMIN.JS ====================
+// Design Premium - Versão Clara e Elegante
+
+// ===== VARIAVEIS GLOBAIS =====
 let subcatAtiva = null;
 let estruturaLocal = [];
 let contextoAtual = null;
@@ -9,12 +12,54 @@ let selecionados = {
     produtos: new Set()
 };
 
-// ==================== INICIALIZACAO ====================
-document.addEventListener("DOMContentLoaded", () => {
+// ===== PRELOADER =====
+document.addEventListener('DOMContentLoaded', function() {
+    // Criar e adicionar o preloader premium
+    const preloader = document.createElement('div');
+    preloader.className = 'preloader';
+    preloader.innerHTML = `
+        <div class="preloader-container">
+            <div class="preloader-logo">
+                <img src="image/Logo.png" alt="Berci Gráfica">
+            </div>
+            <div class="preloader-brand">Berci</div>
+            <div class="preloader-track">
+                <div class="preloader-track-inner"></div>
+            </div>
+            <div class="preloader-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    document.body.prepend(preloader);
+
+    // Remover preloader após carregamento
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            preloader.classList.add('hidden');
+            setTimeout(function() {
+                preloader.remove();
+            }, 800);
+        }, 1000);
+    });
+
+    // Inicializar
     carregarEstruturaAdmin();
+
+    // Header scroll effect
+    const header = document.querySelector('header');
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 10) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    });
 });
 
-// ==================== UTILITARIOS ====================
+// ===== UTILITARIOS =====
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -27,12 +72,28 @@ function fecharModais() {
     contextoAtual = null;
 }
 
-// Placeholder SVG para imagens sem imagem
-function getPlaceholderImg() {
-    return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="260" height="180" viewBox="0 0 260 180"><rect width="260" height="180" fill="#f1f5f9"/><text x="130" y="90" font-family="Segoe UI, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">Sem Imagem</text></svg>');
+function getPlaceholderSVG() {
+    return 'data:image/svg+xml,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200">
+            <rect width="280" height="200" fill="#f7f2ec"/>
+            <rect x="85" y="55" width="110" height="90" rx="4" fill="#ede6de" stroke="#d9d0c8" stroke-width="1.5"/>
+            <text x="140" y="110" font-family="Inter, sans-serif" font-size="13" fill="#b5aaa0" text-anchor="middle" dominant-baseline="middle">Sem Imagem</text>
+            <text x="140" y="128" font-family="Inter, sans-serif" font-size="10" fill="#c9a87c" text-anchor="middle" dominant-baseline="middle">Berci</text>
+        </svg>
+    `);
 }
 
-// ==================== CATEGORIAS ====================
+function showLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// ===== CATEGORIAS =====
 async function carregarEstruturaAdmin() {
     try {
         const res = await fetch('api/api.php?acao=listar_estrutura');
@@ -54,8 +115,8 @@ async function carregarEstruturaAdmin() {
                         <div class="subcat-container">
                             <button class="subcat-btn" onclick="carregarProdutosAdmin(${sub.id})">${escapeHtml(sub.nome)}</button>
                             <div class="menu-row-actions">
-                                <button class="btn-action btn-edit" onclick="abrirModalEditarSubcategoria(${cat.id}, ${sub.id}, '${escapeHtml(sub.nome)}')">✎</button>
-                                <button class="btn-action btn-delete" onclick="eliminarSubcategoria(${sub.id})">✕</button>
+                                <button class="btn-action btn-action-edit" onclick="abrirModalEditarSubcategoria(${cat.id}, ${sub.id}, '${escapeHtml(sub.nome)}')">✎</button>
+                                <button class="btn-action btn-action-delete" onclick="eliminarSubcategoria(${sub.id})">✕</button>
                             </div>
                         </div>
                     `;
@@ -66,8 +127,8 @@ async function carregarEstruturaAdmin() {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <button class="accordion-header" onclick="toggleAccordion(this)">${escapeHtml(cat.nome)}</button>
                     <div class="menu-row-actions">
-                        <button class="btn-action btn-edit" onclick="abrirModalEditarCategoria(${cat.id}, '${escapeHtml(cat.nome)}')">✎</button>
-                        <button class="btn-action btn-delete" onclick="eliminarCategoria(${cat.id})">✕</button>
+                        <button class="btn-action btn-action-edit" onclick="abrirModalEditarCategoria(${cat.id}, '${escapeHtml(cat.nome)}')">✎</button>
+                        <button class="btn-action btn-action-delete" onclick="eliminarCategoria(${cat.id})">✕</button>
                     </div>
                 </div>
                 <div class="accordion-content" style="display:none; padding-left:0.5rem; margin-top:0.5rem;">
@@ -126,7 +187,7 @@ async function eliminarCategoria(id) {
     }
 }
 
-// ==================== SUBCATEGORIAS ====================
+// ===== SUBCATEGORIAS =====
 function abrirModalSubcategoria(catId) {
     document.getElementById('form-subcategoria').reset();
     document.getElementById('subcat-id').value = '';
@@ -164,12 +225,9 @@ async function eliminarSubcategoria(id) {
     }
 }
 
-// ==================== PRODUTOS ====================
+// ===== PRODUTOS =====
 async function carregarProdutosAdmin(subcatId) {
     try {
-        console.log('=== CARREGAR PRODUTOS ADMIN ===');
-        console.log('subcatId recebido:', subcatId);
-        
         subcatAtiva = subcatId;
         const res = await fetch(`api/api.php?acao=produtos&subcategoria_id=${subcatId}`);
         const produtos = await res.json();
@@ -178,19 +236,21 @@ async function carregarProdutosAdmin(subcatId) {
         if (!grid) return;
         grid.innerHTML = "";
 
-        const placeholderImg = getPlaceholderImg();
+        const placeholderImg = getPlaceholderSVG();
 
         if (Array.isArray(produtos) && produtos.length > 0) {
             produtos.forEach(prod => {
                 const card = document.createElement("div");
                 card.className = "card-produto";
-                let img = prod.imagem_url ? `<img src="${prod.imagem_url}">` : `<img src="${placeholderImg}">`;
+                let img = prod.imagem_url && prod.imagem_url !== '' 
+                    ? `<img src="${prod.imagem_url}" onerror="this.src='${getPlaceholderSVG()}'">` 
+                    : `<img src="${placeholderImg}">`;
                 
                 const prodData = encodeURIComponent(JSON.stringify(prod));
                 card.innerHTML = `
                     <div class="quick-actions">
-                        <button class="btn-action btn-edit" onclick="abrirModalEditarProduto('${prodData}')">✎</button>
-                        <button class="btn-action btn-delete" onclick="eliminarProduto(${prod.id})">✕</button>
+                        <button class="btn-action btn-action-edit" onclick="abrirModalEditarProduto('${prodData}')">✎</button>
+                        <button class="btn-action btn-action-delete" onclick="eliminarProduto(${prod.id})">✕</button>
                     </div>
                     ${img}
                     <h3>${escapeHtml(prod.nome)}</h3>
@@ -210,13 +270,9 @@ async function carregarProdutosAdmin(subcatId) {
     }
 }
 
+// ===== MODAL PRODUTO =====
 function abrirModalProduto(subcatId, produtoId = null) {
     const subcategoriaId = parseInt(subcatId) || 0;
-    
-    console.log('=== ABRIR MODAL PRODUTO ===');
-    console.log('subcatId recebido:', subcatId);
-    console.log('subcategoriaId convertido:', subcategoriaId);
-    console.log('produtoId:', produtoId);
     
     document.getElementById('form-produto').reset();
     document.getElementById('prod-id').value = produtoId || '';
@@ -256,11 +312,74 @@ function toggleTipoPreco() {
     }
 }
 
+// ===== FATORES =====
+async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
+    const subcatId = parseInt(subcategoriaId) || 0;
+    
+    let url = `api/api.php?acao=listar_fatores&subcategoria_id=${subcatId}`;
+    if (produtoId && produtoId !== '') {
+        url += `&produto_id=${produtoId}`;
+    }
+    
+    const container = document.getElementById('fatores-checkboxes');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="info-box">A carregar fatores...</div>';
+    
+    try {
+        const res = await fetch(url);
+        const fatores = await res.json();
+        
+        container.innerHTML = '';
+        
+        if (!Array.isArray(fatores) || fatores.length === 0) {
+            container.innerHTML = '<div class="info-box">Nenhum fator disponível. Clique em "Gerir Fatores" para adicionar.</div>';
+            return;
+        }
+        
+        fatores.forEach(fator => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            
+            let aplicaTexto = '';
+            if (fator.escopo === 'global') aplicaTexto = ' (global)';
+            else if (fator.escopo === 'categoria') aplicaTexto = ' (categoria)';
+            else if (fator.escopo === 'subcategoria') aplicaTexto = ' (subcategoria)';
+            else if (fator.escopo === 'produto') aplicaTexto = ' (produto)';
+            else if (fator.escopo === 'produto_pendente') aplicaTexto = ' (pendente)';
+            
+            const opcoes = fator.opcoes || [];
+            
+            div.innerHTML = `
+                <input type="checkbox" class="chk-fator" value="${fator.id}" 
+                       data-nome="${fator.nome}" 
+                       data-id="${fator.id}"
+                       data-opcoes='${JSON.stringify(opcoes)}'
+                       onchange="gerarMatriz()">
+                <label>${escapeHtml(fator.nome)}<span style="color:#b5aaa0; font-size:0.7rem;">${aplicaTexto}</span></label>
+            `;
+            container.appendChild(div);
+        });
+        
+        const isVariavel = document.getElementById('prod-tipo-preco').checked;
+        if (isVariavel) {
+            const chks = document.querySelectorAll('.chk-fator:checked');
+            if (chks.length > 0) {
+                gerarMatriz();
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar fatores:', error);
+        container.innerHTML = '<div class="info-box" style="border-left-color:#c99a8a;">Erro ao carregar fatores.</div>';
+    }
+}
+
+// ===== MATRIZ DE PREÇOS =====
 function gerarMatriz() {
     const chks = document.querySelectorAll('.chk-fator:checked');
     const containerInputs = document.getElementById('inputs-valores-fatores');
     
-    // Guardar valores existentes antes de limpar
     const valoresExistentes = {};
     document.querySelectorAll('.input-valores-fator').forEach(inp => {
         const nome = inp.dataset.fatorNome;
@@ -269,7 +388,6 @@ function gerarMatriz() {
         }
     });
     
-    // Limpar container
     if (containerInputs) containerInputs.innerHTML = "";
     
     if (chks.length === 0) {
@@ -285,28 +403,24 @@ function gerarMatriz() {
         const div = document.createElement('div');
         div.className = "fator-input-box";
         
-        // Verificar se já existem opções predefinidas
         if (opcoesPredefinidas && opcoesPredefinidas.length > 0) {
-            // Usar opções predefinidas como select
             let optionsHtml = opcoesPredefinidas.map(op => `<option value="${op}">${op}</option>`).join('');
-            // Verificar se há valor existente para este fator
             const valorExistente = valoresExistentes[fatorNome] || '';
             
             div.innerHTML = `
-                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">${escapeHtml(fatorNome)}</label>
+                <label style="display:block; margin-bottom:0.4rem; font-weight:500;">${escapeHtml(fatorNome)}</label>
                 <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem;">
                     <select class="input-valores-fator" data-fator-nome="${fatorNome}" 
-                            style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;" 
+                            style="flex:1; padding:6px 10px; border:1px solid #d9d0c8; border-radius:6px; font-size:0.9rem;" 
                             onchange="renderizarTabelaCombinatoria()">
                         ${optionsHtml}
                     </select>
                     <button type="button" class="btn-dashed" style="padding:4px 12px; margin:0; width:auto; white-space:nowrap;" 
                             onclick="adicionarOpcaoSelect(this)">+ Adicionar</button>
                 </div>
-                <small style="color:#64748b; font-size:0.75rem;">Selecione uma opção ou adicione uma nova</small>
+                <small style="color:#b5aaa0; font-size:0.75rem;">Selecione uma opção ou adicione uma nova</small>
             `;
             
-            // Se houver valor existente, selecionar no select
             if (valorExistente) {
                 const select = div.querySelector('.input-valores-fator');
                 if (select) {
@@ -328,26 +442,24 @@ function gerarMatriz() {
                 }
             }
         } else {
-            // Input de texto para valores personalizados
             const valorExistente = valoresExistentes[fatorNome] || '';
             div.innerHTML = `
-                <label style="display:block; margin-bottom:0.4rem; font-weight:600;">${escapeHtml(fatorNome)}</label>
+                <label style="display:block; margin-bottom:0.4rem; font-weight:500;">${escapeHtml(fatorNome)}</label>
                 <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.5rem;">
                     <input type="text" class="input-valores-fator" data-fator-nome="${fatorNome}" 
                            placeholder="Ex: Pequeno, Médio, Grande" 
                            value="${valorExistente}"
-                           style="flex:1; padding:6px 10px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;" 
+                           style="flex:1; padding:6px 10px; border:1px solid #d9d0c8; border-radius:6px; font-size:0.9rem;" 
                            oninput="renderizarTabelaCombinatoria()">
                     <button type="button" class="btn-dashed" style="padding:4px 12px; margin:0; width:auto; white-space:nowrap;" 
                             onclick="adicionarValor(this)">+ Adicionar</button>
                 </div>
-                <small style="color:#64748b; font-size:0.75rem;">Separe os valores por vírgula (ex: Pequeno, Médio, Grande)</small>
+                <small style="color:#b5aaa0; font-size:0.75rem;">Separe os valores por vírgula (ex: Pequeno, Médio, Grande)</small>
             `;
         }
         containerInputs.appendChild(div);
     });
     
-    // Verificar se há valores para renderizar a tabela
     const inputs = document.querySelectorAll('.input-valores-fator');
     let hasValues = false;
     inputs.forEach(inp => {
@@ -370,7 +482,6 @@ function adicionarValor(btn) {
     if (novoValor && novoValor.trim() !== '') {
         const valorAtual = input.value;
         if (valorAtual && valorAtual.trim() !== '') {
-            // Verificar se o valor já existe
             const valores = valorAtual.split(',').map(s => s.trim());
             if (valores.includes(novoValor.trim())) {
                 alert('Este valor já existe!');
@@ -389,7 +500,6 @@ function adicionarOpcaoSelect(btn) {
     const select = btn.previousElementSibling;
     const novaOpcao = prompt("Digite a nova opção:");
     if (novaOpcao && novaOpcao.trim() !== '') {
-        // Verificar se a opção já existe
         const opcoesExistentes = Array.from(select.options).map(opt => opt.value);
         if (opcoesExistentes.includes(novaOpcao.trim())) {
             alert('Esta opção já existe!');
@@ -410,7 +520,6 @@ function renderizarTabelaCombinatoria() {
     let listas = [];
     let nomesFatores = [];
 
-    // Guardar preços existentes antes de recriar a tabela
     const precosExistentes = {};
     document.querySelectorAll('.linha-matriz').forEach(tr => {
         const comboKey = tr.dataset.combo;
@@ -444,30 +553,30 @@ function renderizarTabelaCombinatoria() {
     const cartesiano = (a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
     let combinacoes = listas.length > 1 ? cartesiano(listas) : listas[0].map(x => [x]);
 
-    let tableHtml = `<table style="width:100%; border-collapse:collapse; margin-top:0.5rem;">
+    let tableHtml = `<div class="table-wrapper"><table>
         <thead>
-            <tr style="background:#f1f5f9;">`;
-    nomesFatores.forEach(n => tableHtml += `<th style="padding:8px; text-align:left;">${n}</th>`);
-    tableHtml += `<th style="padding:8px; text-align:right; width:120px;">Preço (€)</th></tr></thead><tbody>`;
+            <tr>`;
+    nomesFatores.forEach(n => tableHtml += `<th>${n}</th>`);
+    tableHtml += `<th style="text-align:right; width:120px;">Preço (€)</th></tr></thead><tbody>`;
 
     combinacoes.forEach((combo) => {
         let arrCombo = Array.isArray(combo) ? combo : [combo];
         const comboKey = JSON.stringify(arrCombo);
         const precoExistente = precosExistentes[comboKey] || '';
         
-        tableHtml += `<tr class="linha-matriz" data-combo='${comboKey}' style="border-bottom:1px solid #e2e8f0;">`;
-        arrCombo.forEach(v => tableHtml += `<td style="padding:8px;">${escapeHtml(v)}</td>`);
-        tableHtml += `<td style="padding:8px; text-align:right;">
+        tableHtml += `<tr class="linha-matriz" data-combo='${comboKey}'>`;
+        arrCombo.forEach(v => tableHtml += `<td>${escapeHtml(v)}</td>`);
+        tableHtml += `<td style="text-align:right;">
             <input type="number" step="0.01" class="preco-variante-input" placeholder="0.00" 
-                   value="${precoExistente}"
-                   style="width:100px; padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; text-align:right;">
+                   value="${precoExistente}">
         </td></tr>`;
     });
 
-    tableHtml += `</tbody></table>`;
+    tableHtml += `</tbody></table></div>`;
     document.getElementById('container-tabela-matriz').innerHTML = tableHtml;
 }
 
+// ===== GUARDAR PRODUTO =====
 async function guardarProduto(e) {
     e.preventDefault();
     const fd = new FormData();
@@ -516,19 +625,16 @@ async function guardarProduto(e) {
             return;
         }
         fd.append('variantes', JSON.stringify(variantes));
-        console.log('Variantes a guardar:', variantes);
     }
 
     try {
         const res = await fetch('api/api.php?acao=guardar_produto', { method: 'POST', body: fd });
         const result = await res.json();
-        console.log('Resposta do servidor:', result);
         
         if (result.sucesso) {
             const produtoId = result.produto_id;
             const produtoNome = document.getElementById('prod-nome').value;
             
-            // Converter fatores pendentes para este produto
             const convertRes = await fetch('api/api.php?acao=converter_fatores_pendentes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -537,8 +643,6 @@ async function guardarProduto(e) {
                     produto_nome: produtoNome 
                 })
             });
-            const convertResult = await convertRes.json();
-            console.log('Fatores convertidos:', convertResult);
             
             fecharModais();
             if (subcatAtiva) carregarProdutosAdmin(subcatAtiva);
@@ -560,15 +664,11 @@ async function eliminarProduto(id) {
     }
 }
 
+// ===== EDITAR PRODUTO =====
 function abrirModalEditarProduto(prodStringEncoded) {
     try {
         const prod = JSON.parse(decodeURIComponent(prodStringEncoded));
-        console.log('=== PRODUTO A EDITAR ===');
-        console.log('Produto:', prod);
-        console.log('Variantes:', prod.variantes);
-        
         const subcatId = prod.subcategoria_id || 0;
-        console.log('subcategoria_id do produto:', subcatId);
         
         abrirModalProduto(subcatId, prod.id);
         document.getElementById('prod-id').value = prod.id;
@@ -588,29 +688,21 @@ function abrirModalEditarProduto(prodStringEncoded) {
             
             setTimeout(async () => {
                 if (prod.variantes && prod.variantes.length > 0) {
-                    console.log('=== A PROCESSAR VARIANTES ===');
-                    
                     let fatoresUsados = new Set();
                     let fatoresValores = {};
                     
-                    prod.variantes.forEach((v, index) => {
-                        console.log('Variante ' + index + ':', v);
-                        
+                    prod.variantes.forEach((v) => {
                         let atributos = {};
                         if (v.atributos_json) {
                             try {
                                 atributos = JSON.parse(v.atributos_json);
-                                console.log('Atributos do JSON:', atributos);
-                            } catch(e) {
-                                console.error('Erro ao parsear JSON:', e);
-                            }
+                            } catch(e) {}
                         } else {
                             atributos = {...v};
                             delete atributos.id;
                             delete atributos.produto_id;
                             delete atributos.preco;
                             delete atributos.created_at;
-                            console.log('Atributos diretos:', atributos);
                         }
                         
                         Object.keys(atributos).forEach(key => {
@@ -624,42 +716,15 @@ function abrirModalEditarProduto(prodStringEncoded) {
                         });
                     });
                     
-                    console.log('=== FATORES USADOS ===');
-                    console.log('Fatores Set:', fatoresUsados);
-                    console.log('Valores:', fatoresValores);
-                    
                     await new Promise(r => setTimeout(r, 500));
                     
                     const checkboxes = document.querySelectorAll('.chk-fator');
-                    console.log('Checkboxes disponíveis:', checkboxes.length);
-                    
                     checkboxes.forEach(chk => {
                         const nome = chk.dataset.nome;
                         if (fatoresUsados.has(nome)) {
                             chk.checked = true;
-                            console.log('✅ Checkbox marcado (nome exato):', nome);
                         }
                     });
-                    
-                    checkboxes.forEach(chk => {
-                        const nome = chk.dataset.nome;
-                        let encontrou = false;
-                        fatoresUsados.forEach(fator => {
-                            if (nome.includes(fator) || fator.includes(nome) || 
-                                nome.replace(/[^a-zA-Z0-9]/g, '') === fator.replace(/[^a-zA-Z0-9]/g, '')) {
-                                encontrou = true;
-                            }
-                        });
-                        if (encontrou && !chk.checked) {
-                            chk.checked = true;
-                            console.log('✅ Checkbox marcado (fallback):', nome);
-                        }
-                    });
-                    
-                    if (document.querySelectorAll('.chk-fator:checked').length === 0 && checkboxes.length > 0) {
-                        checkboxes[0].checked = true;
-                        console.log('✅ Checkbox marcado (primeiro disponível):', checkboxes[0].dataset.nome);
-                    }
                     
                     gerarMatriz();
                     
@@ -670,7 +735,6 @@ function abrirModalEditarProduto(prodStringEncoded) {
                             Object.keys(fatoresValores).forEach(key => {
                                 if (key === nome) {
                                     input.value = fatoresValores[key].join(', ');
-                                    console.log('✅ Valor preenchido para', nome, ':', fatoresValores[key].join(', '));
                                 }
                             });
                         });
@@ -708,16 +772,13 @@ function abrirModalEditarProduto(prodStringEncoded) {
                                     const precoInput = tr.querySelector('.preco-variante-input');
                                     if (precoInput) {
                                         precoInput.value = varianteMatch.preco;
-                                        console.log('Preço preenchido:', varianteMatch.preco);
                                     }
                                 }
                             });
                         }, 100);
                     }, 100);
-                } else {
-                    console.log('Produto sem variantes');
                 }
-            }, 1000);
+            }, 800);
         }
     } catch(e) {
         console.error("Erro ao editar produto:", e);
@@ -725,8 +786,7 @@ function abrirModalEditarProduto(prodStringEncoded) {
     }
 }
 
-// ==================== FATORES ====================
-
+// ===== GERIR FATORES =====
 async function abrirGerirFatores() {
     await carregarListaFatores();
     document.getElementById('modal-gerir-fatores').classList.add('open');
@@ -745,7 +805,7 @@ async function carregarListaFatores() {
     }
     
     container.innerHTML = `
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <div style="border: 1px solid rgba(0,0,0,0.04); border-radius: 10px; overflow: hidden;">
             ${fatores.map(f => {
                 let aplicaTexto = '';
                 if (f.escopo === 'global') aplicaTexto = 'Todos os produtos';
@@ -764,8 +824,8 @@ async function carregarListaFatores() {
                         </div>
                     </div>
                     <div class="fator-actions">
-                        <button class="btn-action btn-edit" onclick="abrirModalEditarFator(${f.id})">✎</button>
-                        <button class="btn-action btn-delete" onclick="eliminarFator(${f.id})">✕</button>
+                        <button class="btn-action btn-action-edit" onclick="abrirModalEditarFator(${f.id})">✎</button>
+                        <button class="btn-action btn-action-delete" onclick="eliminarFator(${f.id})">✕</button>
                     </div>
                 </div>
             `}).join('')}
@@ -773,308 +833,7 @@ async function carregarListaFatores() {
     `;
 }
 
-function abrirModalCriarFator() {
-    const subcatId = document.getElementById('prod-subcat-id').value;
-    const produtoId = document.getElementById('prod-id').value;
-    const produtoNome = document.getElementById('prod-nome').value || 'Novo Produto';
-    
-    if (subcatId && subcatId !== '') {
-        fetch(`api/api.php?acao=listar_estrutura`)
-            .then(res => res.json())
-            .then(categorias => {
-                let subcatNome = '';
-                let catId = null;
-                let catNome = '';
-                
-                for (let cat of categorias) {
-                    for (let sub of cat.subcategorias) {
-                        if (sub.id == subcatId) {
-                            subcatNome = sub.nome;
-                            catId = cat.id;
-                            catNome = cat.nome;
-                            break;
-                        }
-                    }
-                }
-                
-                contextoAtual = {
-                    subcategoria_id: subcatId,
-                    subcategoria_nome: subcatNome,
-                    categoria_id: catId,
-                    categoria_nome: catNome,
-                    produto_id: produtoId || 'novo',
-                    produto_nome: produtoNome
-                };
-                
-                document.getElementById('form-fator').reset();
-                document.getElementById('fator-id').value = '';
-                document.getElementById('modal-fator-titulo').innerText = 'Novo Fator';
-                document.getElementById('entidade-select-group').style.display = 'none';
-                document.getElementById('fator-escopo').value = 'subcategoria';
-                document.getElementById('modal-fator').classList.add('open');
-            });
-    } else {
-        contextoAtual = null;
-        document.getElementById('form-fator').reset();
-        document.getElementById('fator-id').value = '';
-        document.getElementById('modal-fator-titulo').innerText = 'Novo Fator';
-        document.getElementById('entidade-select-group').style.display = 'none';
-        document.getElementById('fator-escopo').value = 'global';
-        document.getElementById('modal-fator').classList.add('open');
-    }
-}
-
-async function abrirModalEditarFator(id) {
-    const res = await fetch('api/api.php?acao=listar_todos_fatores');
-    const fatores = await res.json();
-    const fator = fatores.find(f => f.id == id);
-    
-    if (!fator) return;
-    
-    document.getElementById('form-fator').reset();
-    document.getElementById('fator-id').value = fator.id;
-    document.getElementById('fator-nome').value = fator.nome;
-    document.getElementById('fator-escopo').value = fator.escopo;
-    document.getElementById('modal-fator-titulo').innerText = 'Editar Fator';
-    contextoAtual = null;
-    
-    if (fator.escopo !== 'global' && fator.entidade_id) {
-        await carregarEntidadeSelect(fator.escopo, fator.entidade_id);
-        document.getElementById('entidade-select-group').style.display = 'block';
-    } else {
-        document.getElementById('entidade-select-group').style.display = 'none';
-    }
-    
-    document.getElementById('modal-fator').classList.add('open');
-}
-
-async function mudarEscopoFator() {
-    const escopo = document.getElementById('fator-escopo').value;
-    const entidadeGroup = document.getElementById('entidade-select-group');
-    
-    if (contextoAtual && escopo !== 'global') {
-        entidadeGroup.style.display = 'none';
-        return;
-    }
-    
-    if (escopo === 'global') {
-        entidadeGroup.style.display = 'none';
-        return;
-    }
-    
-    entidadeGroup.style.display = 'block';
-    await carregarEntidadeOptions(escopo);
-}
-
-async function carregarEntidadeOptions(escopo) {
-    const entidadeSelect = document.getElementById('fator-entidade-id');
-    const entidadeLabel = document.getElementById('entidade-label');
-    
-    if (escopo === 'categoria') {
-        entidadeLabel.innerText = 'Selecionar Categoria:';
-        const res = await fetch('api/api.php?acao=listar_categorias_simples');
-        const categorias = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
-    } else if (escopo === 'subcategoria') {
-        entidadeLabel.innerText = 'Selecionar Subcategoria:';
-        const res = await fetch('api/api.php?acao=listar_subcategorias_simples');
-        const subcategorias = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            subcategorias.map(s => `<option value="${s.id}">${escapeHtml(s.categoria_nome)} > ${escapeHtml(s.nome)}</option>`).join('');
-    } else if (escopo === 'produto') {
-        entidadeLabel.innerText = 'Selecionar Produto:';
-        const res = await fetch('api/api.php?acao=listar_produtos_simples');
-        const produtos = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            produtos.map(p => `<option value="${p.id}">${escapeHtml(p.categoria_nome)} > ${escapeHtml(p.subcategoria_nome)} > ${escapeHtml(p.nome)}</option>`).join('');
-    }
-}
-
-async function carregarEntidadeSelect(escopo, entidadeId) {
-    const entidadeSelect = document.getElementById('fator-entidade-id');
-    const entidadeLabel = document.getElementById('entidade-label');
-    
-    if (escopo === 'categoria') {
-        entidadeLabel.innerText = 'Selecionar Categoria:';
-        const res = await fetch('api/api.php?acao=listar_categorias_simples');
-        const categorias = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
-        entidadeSelect.value = entidadeId;
-    } else if (escopo === 'subcategoria') {
-        entidadeLabel.innerText = 'Selecionar Subcategoria:';
-        const res = await fetch('api/api.php?acao=listar_subcategorias_simples');
-        const subcategorias = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            subcategorias.map(s => `<option value="${s.id}">${escapeHtml(s.categoria_nome)} > ${escapeHtml(s.nome)}</option>`).join('');
-        entidadeSelect.value = entidadeId;
-    } else if (escopo === 'produto') {
-        entidadeLabel.innerText = 'Selecionar Produto:';
-        const res = await fetch('api/api.php?acao=listar_produtos_simples');
-        const produtos = await res.json();
-        entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
-            produtos.map(p => `<option value="${p.id}">${escapeHtml(p.categoria_nome)} > ${escapeHtml(p.subcategoria_nome)} > ${escapeHtml(p.nome)}</option>`).join('');
-        entidadeSelect.value = entidadeId;
-    }
-}
-
-async function guardarFator(e) {
-    e.preventDefault();
-    
-    const nome = document.getElementById('fator-nome').value;
-    let escopo = document.getElementById('fator-escopo').value;
-    let entidade_id = null;
-    
-    if (contextoAtual && escopo !== 'global') {
-        switch (escopo) {
-            case 'categoria':
-                entidade_id = contextoAtual.categoria_id;
-                break;
-            case 'subcategoria':
-                entidade_id = contextoAtual.subcategoria_id;
-                break;
-            case 'produto':
-                if (!contextoAtual.produto_id || contextoAtual.produto_id === 'novo') {
-                    escopo = 'produto_pendente';
-                    entidade_id = null;
-                } else {
-                    entidade_id = contextoAtual.produto_id;
-                }
-                break;
-        }
-    } else if (escopo !== 'global') {
-        entidade_id = document.getElementById('fator-entidade-id').value;
-        if (!entidade_id) {
-            alert('Por favor, selecione uma entidade.');
-            return;
-        }
-    }
-    
-    const fator = {
-        id: document.getElementById('fator-id').value || null,
-        nome: nome,
-        tipo: 'select',
-        escopo: escopo,
-        entidade_id: entidade_id,
-        opcoes: [],
-        obrigatorio: false,
-        ordem: 0
-    };
-    
-    const res = await fetch('api/api.php?acao=guardar_fator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fator)
-    });
-    
-    const result = await res.json();
-    if (result.sucesso) {
-        fecharModais();
-        await carregarListaFatores();
-        
-        const subcatId = document.getElementById('prod-subcat-id').value;
-        const produtoId = document.getElementById('prod-id').value;
-        if (subcatId) {
-            await carregarFatoresDisponiveis(subcatId, produtoId || null);
-        }
-        
-        contextoAtual = null;
-    }
-}
-
-async function eliminarFator(id) {
-    if(confirm("Eliminar este fator?")) {
-        const fd = new FormData();
-        fd.append('id', id);
-        await fetch('api/api.php?acao=eliminar_fator', { method: 'POST', body: fd });
-        await carregarListaFatores();
-        
-        const subcatId = document.getElementById('prod-subcat-id').value;
-        const produtoId = document.getElementById('prod-id').value;
-        if (subcatId) {
-            await carregarFatoresDisponiveis(subcatId, produtoId || null);
-        }
-    }
-}
-
-async function carregarFatoresDisponiveis(subcategoriaId, produtoId = null) {
-    const subcatId = parseInt(subcategoriaId) || 0;
-    
-    let url = `api/api.php?acao=listar_fatores&subcategoria_id=${subcatId}`;
-    if (produtoId && produtoId !== '') {
-        url += `&produto_id=${produtoId}`;
-    }
-    
-    console.log('=== A CARREGAR FATORES ===');
-    console.log('URL:', url);
-    console.log('subcatId:', subcatId);
-    console.log('produtoId:', produtoId);
-    
-    const container = document.getElementById('fatores-checkboxes');
-    if (!container) {
-        console.error('Container #fatores-checkboxes não encontrado!');
-        return;
-    }
-    
-    container.innerHTML = '<div class="info-box">A carregar fatores...</div>';
-    
-    try {
-        const res = await fetch(url);
-        const fatores = await res.json();
-        console.log('Fatores recebidos da API:', fatores);
-        
-        container.innerHTML = '';
-        
-        if (!Array.isArray(fatores) || fatores.length === 0) {
-            container.innerHTML = '<div class="info-box">Nenhum fator disponível. Clique em "Gerir Fatores" para adicionar.</div>';
-            return;
-        }
-        
-        fatores.forEach(fator => {
-            console.log('A renderizar fator:', fator.nome, 'escopo:', fator.escopo);
-            
-            const div = document.createElement('div');
-            div.className = 'checkbox-item';
-            
-            let aplicaTexto = '';
-            if (fator.escopo === 'global') aplicaTexto = ' (global)';
-            else if (fator.escopo === 'categoria') aplicaTexto = ' (categoria)';
-            else if (fator.escopo === 'subcategoria') aplicaTexto = ' (subcategoria)';
-            else if (fator.escopo === 'produto') aplicaTexto = ' (produto)';
-            else if (fator.escopo === 'produto_pendente') aplicaTexto = ' (pendente)';
-            
-            const opcoes = fator.opcoes || [];
-            
-            div.innerHTML = `
-                <input type="checkbox" class="chk-fator" value="${fator.id}" 
-                       data-nome="${fator.nome}" 
-                       data-id="${fator.id}"
-                       data-opcoes='${JSON.stringify(opcoes)}'
-                       onchange="gerarMatriz()">
-                <label>${escapeHtml(fator.nome)}<span style="color:#64748b; font-size:0.7rem;">${aplicaTexto}</span></label>
-            `;
-            container.appendChild(div);
-        });
-        
-        console.log('Fatores renderizados com sucesso! Total:', fatores.length);
-        
-        const isVariavel = document.getElementById('prod-tipo-preco').checked;
-        if (isVariavel) {
-            const chks = document.querySelectorAll('.chk-fator:checked');
-            if (chks.length > 0) {
-                gerarMatriz();
-            }
-        }
-        
-    } catch (error) {
-        console.error('Erro ao carregar fatores:', error);
-        container.innerHTML = '<div class="info-box" style="color:#ef4444;">Erro ao carregar fatores: ' + error.message + '</div>';
-    }
-}
-
-// ==================== ATUALIZAR PRECOS ====================
-
+// ===== ATUALIZAR PREÇOS =====
 async function abrirModalAtualizarPrecos() {
     document.getElementById('modal-atualizar-precos').classList.add('open');
     await carregarArvoreSelecao();
@@ -1092,7 +851,6 @@ async function carregarArvoreSelecao() {
             estruturaSelecao = dados;
         } else {
             estruturaSelecao = [];
-            console.error('Dados recebidos não são um array:', dados);
         }
         
         selecionados = {
@@ -1166,7 +924,7 @@ function renderizarArvoreSelecao() {
                                 <label class="checkbox-label">
                                     <input type="checkbox" id="${produtoId}" data-tipo="produto" data-id="${produto.id}" 
                                            data-subcategoria-id="${subcategoria.id}" onchange="toggleProduto(this, ${produto.id}, ${subcategoria.id})" ${produtoChecked ? 'checked' : ''}>
-                                    Produto: ${escapeHtml(produto.nome)} - <span style="color:#2563eb;">${precoTexto}</span>
+                                    Produto: ${escapeHtml(produto.nome)} - <span style="color:#c9a87c;">${precoTexto}</span>
                                 </label>
                             </div>
                         `;
@@ -1338,18 +1096,6 @@ function atualizarContadores() {
             countSpan.textContent = count > 0 ? `(${count} selecionados)` : '';
         }
     });
-    
-    estruturaSelecao.forEach(categoria => {
-        if (categoria.subcategorias) {
-            categoria.subcategorias.forEach(sub => {
-                const countSpan = document.getElementById(`count_sub_${sub.id}`);
-                if (countSpan && sub.produtos) {
-                    const count = sub.produtos.filter(p => selecionados.produtos.has(p.id)).length;
-                    countSpan.textContent = count > 0 ? `(${count} produtos selecionados)` : '';
-                }
-            });
-        }
-    });
 }
 
 function selecionarTodos() {
@@ -1425,5 +1171,177 @@ async function aplicarAumentoPrecos() {
     } catch (error) {
         console.error('Erro:', error);
         alert('Erro ao comunicar com o servidor.');
+    }
+}
+
+// ===== FUNÇÕES ADICIONAIS =====
+function abrirModalCriarFator() {
+    document.getElementById('form-fator').reset();
+    document.getElementById('fator-id').value = '';
+    document.getElementById('modal-fator-titulo').innerText = 'Novo Fator';
+    document.getElementById('entidade-select-group').style.display = 'none';
+    document.getElementById('fator-escopo').value = 'global';
+    document.getElementById('modal-fator').classList.add('open');
+}
+
+function abrirModalEditarFator(id) {
+    fetch('api/api.php?acao=listar_todos_fatores')
+        .then(res => res.json())
+        .then(fatores => {
+            const fator = fatores.find(f => f.id == id);
+            if (!fator) return;
+            
+            document.getElementById('form-fator').reset();
+            document.getElementById('fator-id').value = fator.id;
+            document.getElementById('fator-nome').value = fator.nome;
+            document.getElementById('fator-escopo').value = fator.escopo;
+            document.getElementById('modal-fator-titulo').innerText = 'Editar Fator';
+            
+            if (fator.escopo !== 'global' && fator.entidade_id) {
+                carregarEntidadeSelect(fator.escopo, fator.entidade_id);
+                document.getElementById('entidade-select-group').style.display = 'block';
+            } else {
+                document.getElementById('entidade-select-group').style.display = 'none';
+            }
+            
+            document.getElementById('modal-fator').classList.add('open');
+        });
+}
+
+function mudarEscopoFator() {
+    const escopo = document.getElementById('fator-escopo').value;
+    const entidadeGroup = document.getElementById('entidade-select-group');
+    
+    if (escopo === 'global') {
+        entidadeGroup.style.display = 'none';
+        return;
+    }
+    
+    entidadeGroup.style.display = 'block';
+    carregarEntidadeOptions(escopo);
+}
+
+function carregarEntidadeOptions(escopo) {
+    const entidadeSelect = document.getElementById('fator-entidade-id');
+    const entidadeLabel = document.getElementById('entidade-label');
+    
+    if (escopo === 'categoria') {
+        entidadeLabel.innerText = 'Selecionar Categoria:';
+        fetch('api/api.php?acao=listar_categorias_simples')
+            .then(res => res.json())
+            .then(categorias => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+            });
+    } else if (escopo === 'subcategoria') {
+        entidadeLabel.innerText = 'Selecionar Subcategoria:';
+        fetch('api/api.php?acao=listar_subcategorias_simples')
+            .then(res => res.json())
+            .then(subcategorias => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    subcategorias.map(s => `<option value="${s.id}">${escapeHtml(s.categoria_nome)} > ${escapeHtml(s.nome)}</option>`).join('');
+            });
+    } else if (escopo === 'produto') {
+        entidadeLabel.innerText = 'Selecionar Produto:';
+        fetch('api/api.php?acao=listar_produtos_simples')
+            .then(res => res.json())
+            .then(produtos => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    produtos.map(p => `<option value="${p.id}">${escapeHtml(p.categoria_nome)} > ${escapeHtml(p.subcategoria_nome)} > ${escapeHtml(p.nome)}</option>`).join('');
+            });
+    }
+}
+
+function carregarEntidadeSelect(escopo, entidadeId) {
+    const entidadeSelect = document.getElementById('fator-entidade-id');
+    const entidadeLabel = document.getElementById('entidade-label');
+    
+    if (escopo === 'categoria') {
+        entidadeLabel.innerText = 'Selecionar Categoria:';
+        fetch('api/api.php?acao=listar_categorias_simples')
+            .then(res => res.json())
+            .then(categorias => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+                entidadeSelect.value = entidadeId;
+            });
+    } else if (escopo === 'subcategoria') {
+        entidadeLabel.innerText = 'Selecionar Subcategoria:';
+        fetch('api/api.php?acao=listar_subcategorias_simples')
+            .then(res => res.json())
+            .then(subcategorias => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    subcategorias.map(s => `<option value="${s.id}">${escapeHtml(s.categoria_nome)} > ${escapeHtml(s.nome)}</option>`).join('');
+                entidadeSelect.value = entidadeId;
+            });
+    } else if (escopo === 'produto') {
+        entidadeLabel.innerText = 'Selecionar Produto:';
+        fetch('api/api.php?acao=listar_produtos_simples')
+            .then(res => res.json())
+            .then(produtos => {
+                entidadeSelect.innerHTML = '<option value="">Selecione...</option>' + 
+                    produtos.map(p => `<option value="${p.id}">${escapeHtml(p.categoria_nome)} > ${escapeHtml(p.subcategoria_nome)} > ${escapeHtml(p.nome)}</option>`).join('');
+                entidadeSelect.value = entidadeId;
+            });
+    }
+}
+
+async function guardarFator(e) {
+    e.preventDefault();
+    
+    const nome = document.getElementById('fator-nome').value;
+    let escopo = document.getElementById('fator-escopo').value;
+    let entidade_id = null;
+    
+    if (escopo !== 'global') {
+        entidade_id = document.getElementById('fator-entidade-id').value;
+        if (!entidade_id) {
+            alert('Por favor, selecione uma entidade.');
+            return;
+        }
+    }
+    
+    const fator = {
+        id: document.getElementById('fator-id').value || null,
+        nome: nome,
+        tipo: 'select',
+        escopo: escopo,
+        entidade_id: entidade_id,
+        opcoes: [],
+        obrigatorio: false,
+        ordem: 0
+    };
+    
+    const res = await fetch('api/api.php?acao=guardar_fator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fator)
+    });
+    
+    const result = await res.json();
+    if (result.sucesso) {
+        fecharModais();
+        await carregarListaFatores();
+        
+        const subcatId = document.getElementById('prod-subcat-id').value;
+        const produtoId = document.getElementById('prod-id').value;
+        if (subcatId) {
+            await carregarFatoresDisponiveis(subcatId, produtoId || null);
+        }
+    }
+}
+
+async function eliminarFator(id) {
+    if(confirm("Eliminar este fator?")) {
+        const fd = new FormData();
+        fd.append('id', id);
+        await fetch('api/api.php?acao=eliminar_fator', { method: 'POST', body: fd });
+        await carregarListaFatores();
+        
+        const subcatId = document.getElementById('prod-subcat-id').value;
+        const produtoId = document.getElementById('prod-id').value;
+        if (subcatId) {
+            await carregarFatoresDisponiveis(subcatId, produtoId || null);
+        }
     }
 }
