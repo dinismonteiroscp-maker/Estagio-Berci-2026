@@ -75,6 +75,3 @@ A base de dados `grafica_db` está normalizada e otimizada com índices para gar
    ```bash
    git clone [https://github.com/dinismonteiroscp-maker/Estagio-Berci-2026](https://github.com/dinismonteiroscp-maker/Estagio-Berci-2026)
    cd berci-catalogo
-
-# Licença
-Este projeto é de uso exclusivo e proprietário para a Berci, Lda. Todos os direitos reservados.
